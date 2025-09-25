@@ -1,130 +1,142 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Custom Values — Widget</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Custom Values — Widget</title>
+<style>
+  :root{
+    --bg:#0b0d12;        /* page bg (near-black) */
+    --panel:#141820;     /* card bg */
+    --border:#2a3140;    /* subtle borders */
+    --txt:#f5f7fb;       /* main text */
+    --muted:#99a1b3;     /* secondary text */
+    --accent:#ff7a18;    /* orange accent */
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; padding:0; background:var(--bg); color:var(--txt);
+    font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+  }
+  .wrap{max-width:860px;margin:0 auto;padding:28px}
+  h1{margin:0 0 6px; font-size:24px; letter-spacing:.2px}
+  .muted{color:var(--muted)}
+  .code{font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12px}
 
-  <!--
-    ================
-    Minimal styling
-    ================
-    - Keep everything self-contained (no external CSS or build step).
-    - Dark UI, readable contrast, simple grid/layout classes.
-  -->
-  <style>
-    :root{
-      --bg:#0f1115;      /* page background */
-      --panel:#17191e;   /* card background */
-      --border:#2b2f36;  /* subtle borders */
-      --txt:#fff;        /* main text */
-      --muted:#a1a1aa;   /* secondary text */
-    }
+  .card{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:16px;
+    margin-bottom:18px;
+    box-shadow: 0 8px 18px rgba(0,0,0,.25);
+  }
+  .row{display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end}
+  .col{flex:1 1 240px}
 
-    *{ box-sizing:border-box }
-    body{
-      margin:0;
-      padding:0;
-      background:var(--bg);
-      color:var(--txt);
-      font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial
-    }
+  .input,.btn,.select,textarea{
+    background:#0e1219; color:var(--txt);
+    border:1px solid var(--border); border-radius:10px;
+    padding:10px 12px; outline:none;
+    transition: box-shadow .15s ease, border-color .15s ease;
+  }
+  .input:focus, .select:focus, textarea:focus{
+    border-color:#39455c; box-shadow:0 0 0 3px rgba(255,122,24,.2);
+  }
+  .btn{ cursor:pointer; font-weight:700; letter-spacing:.2px }
+  .btn:disabled{ opacity:.6; cursor:default }
+  .btn.primary{
+    background:linear-gradient(180deg, #ff9b37, var(--accent));
+    color:#1a1208; border:1px solid #f0902f;
+    box-shadow:0 0 12px rgba(255,122,24,.35), inset 0 -4px 12px rgba(0,0,0,.2);
+  }
+  .btn.ghost{
+    background:#0e1219; color:var(--txt); border:1px solid var(--border);
+  }
 
-    .wrap{ max-width:600px; margin:0 auto; padding:24px }
-    h1{ margin:0 0 8px; font-size:22px }
-    .muted{ color:var(--muted) }
+  .kv{display:grid; grid-template-columns:160px 1fr; gap:10px; margin-top:14px}
+  .lbl{color:var(--muted)}
+  .mono{font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12px; color:#c9d1e5}
 
-    .card{
-      background:var(--panel);
-      border:1px solid var(--border);
-      border-radius:12px;
-      padding:16px;
-      margin-bottom:16px;
-    }
+  .badge{
+    display:inline-block; padding:2px 10px; border-radius:999px;
+    font-size:11px; border:1px solid transparent; font-weight:700;
+  }
+  .badge.ok{ background:rgba(52,211,153,.12); color:#bdf8d0; border-color:rgba(52,211,153,.35) }
+  .badge.no{ background:rgba(239,68,68,.12); color:#ffd0d0; border-color:rgba(239,68,68,.35) }
 
-    .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end }
+  .toolbar{ margin-top:14px; display:flex; gap:10px; align-items:center; flex-wrap:wrap }
+  .spacer{flex:1}
+  .err{color:#ffb3b3}
+  .note{color:#b2ffc7}
 
-    .input,.btn,.select,textarea{
-      background:#11151b;
-      color:var(--txt);
-      border:1px solid var(--border);
-      border-radius:8px;
-      padding:8px;
-      outline:none;
-    }
+  /* ====== Full-page loading overlay with orange glow spinner ====== */
+  .overlay {
+    position: fixed; inset: 0; display: none; place-items: center;
+    background: rgba(8,10,14,.55); backdrop-filter: blur(2px);
+    z-index: 40;
+  }
+  .overlay.show { display: grid; }
 
-    .btn{ cursor:pointer; font-weight:600 }
-    .btn:disabled{ opacity:.6; cursor:default }
+  .spinner {
+    width: 56px; height: 56px; border-radius: 50%;
+    border: 3px solid rgba(255,122,24,.18);
+    border-top-color: var(--accent);
+    animation: spin 0.85s linear infinite;
+    /* soft orange outer glow + inner highlight */
+    box-shadow:
+      0 0 20px rgba(255,122,24,.55),
+      0 0 60px rgba(255,122,24,.25),
+      inset 0 0 10px rgba(255,122,24,.25);
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
 
-    .kv{ display:grid; grid-template-columns:120px 1fr; gap:8px; margin-top:16px }
-    .lbl{ color:var(--muted) }
-    .mono{ font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12px; color:#d1d5db }
-
-    .badge{
-      display:inline-block; padding:2px 8px; border-radius:999px;
-      font-size:11px; border:1px solid transparent
-    }
-    .badge.ok{ background:rgba(52,211,153,.15); color:#bbf7d0; border-color:rgba(52,211,153,.4) }
-    .badge.no{ background:rgba(239,68,68,.10); color:#fecaca; border-color:rgba(239,68,68,.4) }
-
-    .toolbar{ margin-top:16px; display:flex; gap:10px; align-items:center }
-    .err{ color:#fecaca }
-    .note{ color:#a1f0b6 }
-  </style>
+  /* small helper chips */
+  .chip{display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border:1px solid var(--border); border-radius:999px; color:var(--muted)}
+  .sep{opacity:.35}
+</style>
 </head>
 <body>
+  <!-- Loading overlay -->
+  <div id="overlay" class="overlay"><div class="spinner" aria-label="Loading"></div></div>
+
   <div class="wrap">
     <h1>Custom Values Viewer</h1>
     <p class="muted">
-      This is a super-light, static widget. It reads from your n8n webhook and
-      shows one value at a time. You can wire a write endpoint later.
-      <br />
-      Tip: you can override endpoints via URL:
-      <code>?readUrl=https://...&amp;writeUrl=https://...</code>
+      Static widget that reads from your n8n webhook and shows one value at a time. You can wire a write endpoint later.<br/>
+      Tip: override endpoints via URL:
+      <span class="code">?readUrl=https://...&amp;writeUrl=https://...</span>
     </p>
 
-    <!--
-      ===================
-      Fetch controls card
-      ===================
-      - Location ID (required)
-      - Page size (how many to show)
-      - Fetch button
-    -->
+    <!-- Controls -->
     <div class="card">
       <div class="row">
-        <label style="flex:1">
-          <div class="muted" style="margin-bottom:4px">Location ID</div>
+        <label class="col">
+          <div class="muted" style="margin-bottom:6px">Location ID</div>
           <input id="locationId" class="input" placeholder="KH4..." />
         </label>
 
-        <label>
-          <div class="muted" style="margin-bottom:4px">Page size</div>
+        <label style="width:120px">
+          <div class="muted" style="margin-bottom:6px">Page size</div>
           <select id="pageSize" class="select">
-            <!-- keep a tiny set of sensible options -->
-            <option>1</option>
-            <option selected>10</option>
-            <option>20</option>
-            <option>50</option>
+            <option>1</option><option selected>10</option><option>20</option><option>50</option>
           </select>
         </label>
 
-        <button id="btnFetch" class="btn">Fetch</button>
+        <button id="btnFetch" class="btn primary" style="height:40px; padding:0 16px">Fetch</button>
       </div>
 
-      <!-- status/diagnostics line -->
-      <div id="status" style="margin-top:8px"></div>
+      <div class="row" style="margin-top:10px">
+        <label class="col">
+          <div class="muted" style="margin-bottom:6px">Search (by Display Name)</div>
+          <input id="search" class="input" placeholder="Start typing to filter…" />
+        </label>
+        <div class="chip"><span id="status">Idle.</span></div>
+      </div>
     </div>
 
-    <!--
-      ==========================
-      Single-item viewer (read)
-      ==========================
-      - Shows one record (name/key/value)
-      - "Has Value?" badge reacts live as you type
-      - Save (disabled until you provide a write endpoint)
-      - Next cycles through items (wraps around)
-    -->
+    <!-- Viewer -->
     <div id="viewer" class="card" style="display:none;">
       <div class="kv">
         <div class="lbl">Display Name</div>
@@ -137,264 +149,205 @@
         <div id="cvHas"></div>
 
         <div class="lbl">Value</div>
-        <div><textarea id="cvValue" rows="4" style="width:100%"></textarea></div>
+        <div><textarea id="cvValue" rows="6" style="width:100%"></textarea></div>
       </div>
 
       <div class="toolbar">
-        <button id="btnSave" class="btn">Save</button>
-        <button id="btnNext" class="btn">Next</button>
-        <span id="pager" class="muted"></span>
+        <button id="btnSave" class="btn ghost">Save</button>
+        <button id="btnPrev" class="btn ghost">Prev</button>
+        <button id="btnNext" class="btn primary">Next</button>
+        <div class="spacer"></div>
+        <span id="pager" class="muted code"></span>
       </div>
-
       <div id="saveMsg" style="margin-top:8px;"></div>
     </div>
   </div>
 
-  <script>
-    // ===============
-    // Query param util
-    // ===============
-    // - Lets you override read/write endpoints without redeploying.
-    // - Also supports auto-fetch when "locationId" is present in the URL.
-    const getQS = (k, fb = "") => {
-      const qs = new URLSearchParams(window.location.search);
-      const v = qs.get(k) || fb;
-      try { return /%[0-9A-F]{2}/i.test(v) ? decodeURIComponent(v) : v; } catch { return v; }
-    };
+<script>
+  // ---------------------------
+  // Query param helper
+  // ---------------------------
+  const getQS = (k, fb="") => {
+    const qs = new URLSearchParams(window.location.search);
+    const v = qs.get(k) || fb;
+    try { return /%[0-9A-F]{2}/i.test(v) ? decodeURIComponent(v) : v; } catch { return v; }
+  };
 
-    // ===========================
-    // Endpoints (safe defaults)
-    // ===========================
-    // - "READ_DEFAULT" matches your n8n Webhook node path.
-    // - "WRITE_DEFAULT" left blank; set later when your write flow is ready.
-    const READ_DEFAULT  = "https://api.visquanta.com/webhook/call-custom-values-data";
-    const WRITE_DEFAULT = "";
+  // ---------------------------
+  // Endpoints (overridable)
+  // ---------------------------
+  const READ_DEFAULT  = "https://api.visquanta.com/webhook/call-custom-values-data";
+  const WRITE_DEFAULT = ""; // optional
+  const READ_URL  = getQS("readUrl", READ_DEFAULT);
+  const WRITE_URL = getQS("writeUrl", WRITE_DEFAULT);
 
-    // Allow override via URL:
-    //   ?readUrl=https://...&writeUrl=https://...
-    const READ_URL  = getQS("readUrl", READ_DEFAULT);
-    const WRITE_URL = getQS("writeUrl", WRITE_DEFAULT);
+  // ---------------------------
+  // DOM refs
+  // ---------------------------
+  const el = id => document.getElementById(id);
+  const $overlay = el("overlay");
+  const $loc     = el("locationId");
+  const $size    = el("pageSize");
+  const $fetch   = el("btnFetch");
+  const $status  = el("status");
+  const $search  = el("search");
 
-    // ====================
-    // Grab all DOM targets
-    // ====================
-    const el = id => document.getElementById(id);
-    const $loc    = el("locationId");
-    const $size   = el("pageSize");
-    const $fetch  = el("btnFetch");
-    const $status = el("status");
+  const $viewer  = el("viewer");
+  const $name    = el("cvName");
+  const $key     = el("cvKey");
+  const $has     = el("cvHas");
+  const $val     = el("cvValue");
+  const $save    = el("btnSave");
+  const $prev    = el("btnPrev");
+  const $next    = el("btnNext");
+  const $pager   = el("pager");
+  const $saveMsg = el("saveMsg");
 
-    const $viewer = el("viewer");
-    const $name   = el("cvName");
-    const $key    = el("cvKey");
-    const $has    = el("cvHas");
-    const $val    = el("cvValue");
-    const $save   = el("btnSave");
-    const $next   = el("btnNext");
-    const $pager  = el("pager");
-    const $saveMsg= el("saveMsg");
+  // ---------------------------
+  // State
+  // ---------------------------
+  let items  = [];      // full set returned from server (page 1..N on backend)
+  let fItems = [];      // filtered via search (subset of items)
+  let idx    = 0;       // pointer into fItems
+  let edited = new Map();
 
-    // ========================
-    // Local in-memory "state"
-    // ========================
-    // - items: the current page of values (1..N).
-    // - idx:   which one is being displayed.
-    // - edited: fieldKey -> current textarea content (lets you type without committing).
-    let items  = [];
-    let idx    = 0;
-    let edited = new Map();
+  // ---------------------------
+  // Helpers
+  // ---------------------------
+  const showOverlay = (on=true)=> $overlay.classList.toggle("show", !!on);
+  const badge = ok => `<span class="badge ${ok ? "ok":"no"}">${ok ? "Yes":"No"}</span>`;
 
-    // ==========================================
-    // normalize(payload)
-    // ------------------------------------------
-    // Your n8n response can come in several shapes depending on how you build the flow:
-    //   1) ARRAY with first item containing "customValuesSubset"      → [ { customValuesSubset:[...] } ]
-    //   2) OBJECT with "customValuesSubset"                           → { customValuesSubset:[...] }
-    //   3) OBJECT with "customValues"                                 → { customValues:[...] }
-    //   4) OBJECT with "data" (array)                                 → { data:[...] }
-    //
-    // This function normalizes all of those into "Array<{name, fieldKey, value?}>".
-    function normalize(payload) {
-      if (!payload) return [];
-
-      // Case 1: n8n often returns an ARRAY of items; your sample had
-      // [{"customValuesSubset":[...], "totalCount": 280}]
-      if (Array.isArray(payload)) {
-        if (payload.length && payload[0] && Array.isArray(payload[0].customValuesSubset)) {
-          return payload[0].customValuesSubset;
-        }
-        // If it's already an array of CVs, pass it through
-        return payload;
-      }
-
-      // Case 2: plain object with the subset
-      if (Array.isArray(payload.customValuesSubset)) return payload.customValuesSubset;
-
-      // Case 3/4: older shapes or passthroughs
-      if (Array.isArray(payload.customValues)) return payload.customValues;
-      if (payload.data && Array.isArray(payload.data)) return payload.data;
-
-      // Unknown shape → nothing to display
-      return [];
+  function normalize(payload){
+    if (!payload) return [];
+    if (Array.isArray(payload)) {
+      if (payload.length && Array.isArray(payload[0]?.customValuesSubset)) return payload[0].customValuesSubset;
+      return payload;
     }
+    if (Array.isArray(payload.customValuesSubset)) return payload.customValuesSubset;
+    if (Array.isArray(payload.customValues)) return payload.customValues;
+    if (Array.isArray(payload.data)) return payload.data;
+    return [];
+  }
 
-    // Tiny helper to render the green/red "Has Value?" badge
-    function badge(ok) {
-      return `<span class="badge ${ok ? "ok" : "no"}">${ok ? "Yes" : "No"}</span>`;
-    }
+  function applyFilter(){
+    const q = $search.value.trim().toLowerCase();
+    if (!q) { fItems = [...items]; return; }
+    fItems = items.filter(v => (v.name || "").toLowerCase().includes(q));
+  }
 
-    // ======================
-    // render() → single item
-    // ======================
-    // - Draws one record (name, key, text area value).
-    // - Keeps "Has Value?" in sync as you type.
-    function render() {
-      if (!items.length) {
-        $viewer.style.display = "none";
-        return;
-      }
-      const cur = items[idx];
-      $viewer.style.display = "block";
-
-      // Preferred label/name for the field (human readable).
-      $name.textContent = cur.name || "";
-
-      // The raw field key is useful for mapping in n8n or the write step.
-      $key.textContent  = cur.fieldKey || "";
-
-      // Value shown in the textarea:
-      // - use "edited" map (unsaved user input) if present,
-      // - otherwise use the server's current value.
-      const value = edited.has(cur.fieldKey) ? edited.get(cur.fieldKey) : (cur.value ?? "");
-      $val.value = value;
-
-      // Live badge (updates when you type)
-      $has.innerHTML = badge(String(value).trim() !== "");
-
-      // Tiny pager text (index = humanized 1..N)
-      $pager.textContent = `Item ${idx + 1} / ${items.length}`;
-
-      // Disable Save if no write endpoint provided yet.
-      $save.disabled = !WRITE_URL;
-    }
-
-    // As you type into the textarea, keep edited state + refresh badge
-    $val.addEventListener("input", () => {
-      const cur = items[idx];
-      if (!cur) return;
-      edited.set(cur.fieldKey, $val.value);
-      $has.innerHTML = badge(String($val.value).trim() !== "");
-    });
-
-    // Next → cycles through items (wraps at the end)
-    $next.addEventListener("click", () => {
-      if (!items.length) return;
-      idx = (idx + 1) % items.length;
-      $saveMsg.textContent = "";
-      render();
-    });
-
-    // ==========================
-    // Save → (optional) write API
-    // ==========================
-    // - Left disabled by default; enable by passing &writeUrl=... in the URL
-    // - Payload shape matches what your n8n writer can handle:
-    //   { locationId, updates: [{ fieldKey, value }] }
-    $save.addEventListener("click", async () => {
-      if (!WRITE_URL) {
-        $saveMsg.innerHTML = '<span class="muted">WRITE URL not set.</span>';
-        return;
-      }
-
-      const cur = items[idx];
-      if (!cur) return;
-
-      const newVal = edited.has(cur.fieldKey) ? edited.get(cur.fieldKey) : (cur.value ?? "");
-      const locationId = $loc.value.trim();
-
-      $save.disabled = true;
-      $saveMsg.textContent = "Saving…";
-
-      try {
-        const res = await fetch(WRITE_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            locationId,
-            updates: [{ fieldKey: cur.fieldKey, value: newVal }]
-          })
-        });
-
-        const text = await res.text();
-        let payload = {};
-        try { payload = text ? JSON.parse(text) : {}; } catch {}
-
-        if (!res.ok) throw new Error(`Write ${res.status}`);
-
-        // Optimistic UI: commit what the server accepted
-        cur.value = newVal;
-        edited.delete(cur.fieldKey);
-        $saveMsg.innerHTML = '<span class="note">Saved ✔</span>';
-      } catch (e) {
-        $saveMsg.innerHTML = `<span class="err">${e.message || e}</span>`;
-      } finally {
-        $save.disabled = false;
-        render();
-      }
-    });
-
-    // ======================
-    // Fetch (read) from n8n
-    // ======================
-    // - Sends { locationId, page, pageSize, sort }
-    // - Expects any of the shapes documented in normalize()
-    // - Displays first N (pageSize) client-side
-    $fetch.addEventListener("click", async () => {
-      const locationId = $loc.value.trim();
-      const pageSize   = Math.max(1, parseInt($size.value) || 10);
-
-      // Reset UI
-      $status.textContent = "Loading…";
+  function render(){
+    if (!fItems.length) {
       $viewer.style.display = "none";
-      items = []; idx = 0; edited.clear(); $saveMsg.textContent = "";
-
-      try {
-        const res = await fetch(READ_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ locationId, page: 1, pageSize, sort: "name-asc" })
-        });
-
-        const text = await res.text();
-        let payload = {};
-        try { payload = text ? JSON.parse(text) : {}; } catch {}
-
-        if (!res.ok) throw new Error(`Read ${res.status}`);
-
-        // Pull out the list from any supported shape
-        items = normalize(payload);
-
-        // Only show up to "pageSize" items in this simple viewer
-        items = items.slice(0, pageSize);
-
-        $status.textContent = `Loaded ${items.length} item${items.length === 1 ? "" : "s"}.`;
-        render();
-
-      } catch (e) {
-        $status.innerHTML = `<span class="err">${e.message || e}</span>`;
-      }
-    });
-
-    // ============================================
-    // Auto-fill + auto-fetch from URL if provided
-    // ============================================
-    // - Example:
-    //   https://aaron-rowley.github.io/custom-values-tool/?locationId=KH4...&pageSize=10
-    const initialLoc = getQS("locationId", "");
-    if (initialLoc) {
-      $loc.value = initialLoc;
-      $fetch.click();
+      $status.textContent = "No matching items.";
+      return;
     }
-  </script>
+    const cur = fItems[idx];
+    $viewer.style.display = "block";
+    $name.textContent = cur.name || "";
+    $key.textContent  = cur.fieldKey || "";
+    const currentVal  = edited.has(cur.fieldKey) ? edited.get(cur.fieldKey) : (cur.value ?? "");
+    $val.value = currentVal;
+    $has.innerHTML = badge(String(currentVal).trim() !== "");
+    $pager.textContent = `Item ${idx+1} / ${fItems.length}`;
+    $save.disabled = !WRITE_URL;
+  }
+
+  // Live typing → update "Has value?" and stash edits
+  $val.addEventListener("input", () => {
+    const cur = fItems[idx]; if (!cur) return;
+    edited.set(cur.fieldKey, $val.value);
+    $has.innerHTML = badge(String($val.value).trim() !== "");
+  });
+
+  // Search
+  $search.addEventListener("input", () => {
+    applyFilter();
+    idx = 0;
+    render();
+  });
+
+  // Pager
+  $prev.addEventListener("click", () => {
+    if (!fItems.length) return;
+    idx = (idx - 1 + fItems.length) % fItems.length;
+    $saveMsg.textContent = "";
+    render();
+  });
+  $next.addEventListener("click", () => {
+    if (!fItems.length) return;
+    idx = (idx + 1) % fItems.length;
+    $saveMsg.textContent = "";
+    render();
+  });
+
+  // Save (optional)
+  $save.addEventListener("click", async () => {
+    if (!WRITE_URL) { $saveMsg.innerHTML = '<span class="muted">WRITE URL not set.</span>'; return; }
+    const cur = fItems[idx]; if (!cur) return;
+
+    const locationId = $loc.value.trim();
+    const newVal = edited.has(cur.fieldKey) ? edited.get(cur.fieldKey) : (cur.value ?? "");
+
+    $save.disabled = true; $saveMsg.textContent = "Saving…";
+    try{
+      showOverlay(true);
+      const res = await fetch(WRITE_URL, {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({ locationId, updates:[{ fieldKey: cur.fieldKey, value:newVal }] })
+      });
+      const text = await res.text();
+      let payload={}; try{ payload = text ? JSON.parse(text) : {}; }catch{}
+      if (!res.ok) throw new Error(`Write ${res.status}`);
+      // optimistic update
+      cur.value = newVal; edited.delete(cur.fieldKey);
+      $saveMsg.innerHTML = '<span class="note">Saved ✔</span>';
+    }catch(e){
+      $saveMsg.innerHTML = `<span class="err">${e?.message || e}</span>`;
+    }finally{
+      $save.disabled = false; showOverlay(false); render();
+    }
+  });
+
+  // Fetch
+  $fetch.addEventListener("click", async () => {
+    const locationId = $loc.value.trim();
+    const pageSize = Math.max(1, parseInt($size.value) || 10);
+
+    // reset UI
+    $status.textContent = "Loading…";
+    $saveMsg.textContent = "";
+    $viewer.style.display = "none";
+    items = []; fItems = []; idx = 0; edited.clear();
+    showOverlay(true);
+
+    try{
+      const res = await fetch(READ_URL, {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({ locationId, page:1, pageSize, sort:"name-asc" })
+      });
+      const text = await res.text();
+      let payload={}; try{ payload = text ? JSON.parse(text) : {}; }catch{}
+      if (!res.ok) throw new Error(`Read ${res.status}`);
+
+      items = normalize(payload).slice(0, pageSize);
+      applyFilter();
+      $status.textContent = `Loaded ${items.length} item${items.length===1?"":"s"}.`;
+      render();
+    }catch(e){
+      $status.innerHTML = `<span class="err">${e?.message || e}</span>`;
+    }finally{
+      showOverlay(false);
+    }
+  });
+
+  // Auto-fill & optional auto-fetch
+  const initialLoc  = getQS("locationId", "");
+  const initialSize = getQS("pageSize", "");
+  if (initialLoc)  $loc.value  = initialLoc;
+  if (initialSize) $size.value = initialSize;
+  if (initialLoc)  $fetch.click();
+</script>
 </body>
 </html>
