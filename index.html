@@ -12,39 +12,22 @@
   }
   *{box-sizing:border-box}
   html,body{height:100%}
-  body{
-    margin:0;background:var(--bg);color:var(--txt);
-    font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial
-  }
+  body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
   .app{min-height:100%;display:flex;flex-direction:column}
   .wrap{width:100%;max-width:1200px;margin:0 auto;padding:20px 16px;flex:1;display:flex;flex-direction:column;gap:12px}
-
   h1{margin:0;font-size:22px}
   .muted{color:var(--muted)}
-
   .card{background:var(--panel);border:1px solid var(--border);border-radius:14px}
   .pad{padding:14px}
   .row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
   .pill{border:1px solid var(--border);border-radius:999px;padding:6px 10px}
-
-  .input,.btn,.select{
-    background:#11151b;color:var(--txt);border:1px solid var(--border);
-    border-radius:10px;padding:8px 10px;outline:none;min-height:36px
-  }
+  .input,.btn,.select{background:#11151b;color:var(--txt);border:1px solid var(--border);border-radius:10px;padding:8px 10px;outline:none;min-height:36px}
   .btn{cursor:pointer;font-weight:700}
   .btn.primary{background:var(--accent);color:#111;border-color:#000}
   .btn.ghost{background:transparent}
   .btn:disabled{opacity:.6;cursor:default}
-
-  /* Layout: top controls, middle 2-column, bottom queue */
-  .two{
-    display:grid;grid-template-columns: 1fr minmax(420px, 1.2fr); gap:12px; align-items:stretch;
-  }
-  @media (max-width: 980px){
-    .two{grid-template-columns: 1fr}
-  }
-
-  /* Left column: results list */
+  .two{display:grid;grid-template-columns: 1fr minmax(420px, 1.2fr); gap:12px; align-items:stretch}
+  @media (max-width: 980px){ .two{grid-template-columns: 1fr} }
   .left .head{display:flex;align-items:center;gap:8px;padding:10px;border-bottom:1px solid var(--border)}
   .table-wrap{max-height:60vh;overflow:auto}
   table{width:100%;border-collapse:separate;border-spacing:0}
@@ -56,43 +39,18 @@
   .ok{background:rgba(52,211,153,.15);color:#bbf7d0;border-color:rgba(52,211,153,.4)}
   .no{background:rgba(239,68,68,.10);color:#fecaca;border-color:rgba(239,68,68,.4)}
   .sel{outline:2px solid var(--accent-2);outline-offset:-2px}
-
-  /* Right column: editable table (scrolls) */
   .editor .head{display:flex;align-items:center;gap:8px;padding:10px;border-bottom:1px solid var(--border)}
   .edit-table{max-height:60vh;overflow:auto}
-  .value-input{
-    width:100%;min-width:200px;background:#0f141a;border:1px solid var(--border);
-    color:var(--txt);border-radius:8px;padding:7px 9px;outline:none
-  }
+  .value-input{width:100%;min-width:200px;background:#0f141a;border:1px solid var(--border);color:var(--txt);border-radius:8px;padding:7px 9px;outline:none}
   .value-input.changed{box-shadow:0 0 0 2px var(--accent-2) inset;border-color:var(--accent)}
-
-  /* Bottom queue */
   .queue .chips{display:flex;flex-wrap:wrap;gap:8px}
   .chip{display:inline-flex;gap:8px;align-items:center;background:#11151b;border:1px solid var(--border);border-radius:999px;padding:6px 10px}
   .chip .x{cursor:pointer;font-weight:900;opacity:.8}
   .queue .bar{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-top:10px}
-
-  /* Spinner overlay */
   .overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;backdrop-filter:blur(2px);z-index:50}
-  .spinner{
-    width:68px;height:68px;border-radius:50%;
-    background:
-      radial-gradient(circle at 30% 30%, rgba(255,138,0,.85), transparent 55%),
-      radial-gradient(circle at 70% 70%, rgba(255,138,0,.35), transparent 45%),
-      #0b0b0b;
-    box-shadow:
-      0 0 24px rgba(255,138,0,.35),
-      0 0 60px rgba(255,138,0,.18) inset,
-      0 0 4px rgba(255,138,0,.7) inset;
-    animation: spin 1.1s linear infinite, pulse 1.6s ease-in-out infinite;
-    border:2px solid rgba(255,138,0,.35);
-  }
+  .spinner{width:68px;height:68px;border-radius:50%;background:radial-gradient(circle at 30% 30%, rgba(255,138,0,.85), transparent 55%),radial-gradient(circle at 70% 70%, rgba(255,138,0,.35), transparent 45%),#0b0b0b;box-shadow:0 0 24px rgba(255,138,0,.35),0 0 60px rgba(255,138,0,.18) inset,0 0 4px rgba(255,138,0,.7) inset;animation:spin 1.1s linear infinite, pulse 1.6s ease-in-out infinite;border:2px solid rgba(255,138,0,.35)}
   @keyframes spin {to{transform:rotate(360deg)}}
-  @keyframes pulse {50%{box-shadow:
-      0 0 36px rgba(255,138,0,.55),
-      0 0 90px rgba(255,138,0,.28) inset,
-      0 0 6px rgba(255,138,0,1) inset;
-  }}
+  @keyframes pulse {50%{box-shadow:0 0 36px rgba(255,138,0,.55),0 0 90px rgba(255,138,0,.28) inset,0 0 6px rgba(255,138,0,1) inset}}
 </style>
 </head>
 <body>
@@ -100,8 +58,8 @@
   <div class="wrap">
     <div>
       <h1>Custom Values Viewer</h1>
-      <p class="muted">Full-width, responsive widget. Read from n8n; edit on the right; queue changes below and send only the updates.  
-        URL overrides: <code>?readUrl=...&writeUrl=...&locationId=...&page=1&pageSize=10&sort=name-asc</code>
+      <p class="muted">Full-width, responsive widget. Read from n8n; edit on the right; queue changes below and send only the updates.<br>
+        URL overrides: <code>?readUrl=...&writeUrl=...&locationId=...&page=1&pageSize=20&sort=name-asc</code>
       </p>
     </div>
 
@@ -115,7 +73,7 @@
 
         <label>
           <div class="muted" style="margin-bottom:4px">Page size</div>
-          <select id="pageSize" class="select"><option>10</option><option>20</option><option>50</option></select>
+          <select id="pageSize" class="select"><option>10</option><option selected>20</option><option>50</option></select>
         </label>
 
         <label>
@@ -129,7 +87,6 @@
         </label>
 
         <button id="btnFetch" class="btn primary">Fetch</button>
-
         <div id="status" class="pill" style="margin-left:auto">Ready.</div>
       </div>
 
@@ -138,7 +95,6 @@
           <div class="muted" style="margin-bottom:4px">Search by Display Name (client filter)</div>
           <input id="search" class="input" placeholder="Type to filter..." />
         </label>
-
         <div class="row" style="margin-left:auto">
           <button id="btnPrev" class="btn">Prev page</button>
           <button id="btnNext" class="btn">Next page</button>
@@ -210,7 +166,6 @@
       </div>
       <div id="saveMsg" style="margin-top:8px;"></div>
     </div>
-
   </div>
 </div>
 
@@ -218,17 +173,18 @@
 <div id="overlay" class="overlay" aria-live="polite" aria-busy="true"><div class="spinner" title="Loading"></div></div>
 
 <script>
-  // ---------- Helpers ----------
+  // ===== Config / URLs =====
   const qs = new URLSearchParams(location.search);
   const getQS = (k, fb="") => { const v = qs.get(k) ?? fb; try{ return /%[0-9A-F]{2}/i.test(v)?decodeURIComponent(v):v }catch{ return v } };
   const toInt = (v, fb) => { const n = parseInt(v,10); return Number.isFinite(n) && n>0 ? n : fb };
 
+  // Default to your prod API; override with ?readUrl=... in query if needed.
   const READ_DEFAULT  = "https://api.visquanta.com/webhook/call-custom-values-data";
-  const WRITE_DEFAULT = ""; // pass writeUrl=... to enable saving
-
+  const WRITE_DEFAULT = ""; // set ?writeUrl=... if/when you wire a writer
   const READ_URL  = getQS("readUrl", READ_DEFAULT);
   const WRITE_URL = getQS("writeUrl", WRITE_DEFAULT);
 
+  // ===== DOM =====
   const $ = id => document.getElementById(id);
   const $loc=$("locationId"), $size=$("pageSize"), $sort=$("sort"), $fetch=$("btnFetch");
   const $status=$("status"), $pager=$("pager"), $countInfo=$("countInfo");
@@ -237,55 +193,45 @@
   const $chips=$("chips"), $queueCount=$("queueCount"), $btnClear=$("btnClear"), $btnSaveAll=$("btnSaveAll"), $saveMsg=$("saveMsg");
   const $overlay=$("overlay");
 
-  // State
+  // ===== State =====
   let serverPage = Math.max(1, toInt(getQS("page"), 1));
-  let pageSize   = Math.max(1, toInt(getQS("pageSize"), 10));
+  let pageSize   = Math.max(1, toInt(getQS("pageSize"), 20));
   let sortKind   = getQS("sort","name-asc");
-
-  $size.value = String(pageSize);
-  $sort.value = sortKind;
+  $size.value = String(pageSize); $sort.value = sortKind;
 
   let totalCount = 0;
-  let pageItems  = [];   // raw items from server page
-  let filtered   = [];   // filtered by search
-  const edited   = new Map(); // key: fieldKey -> { id, fieldKey, value, name }
+  let pageItems  = [];
+  let filtered   = [];
+  const edited   = new Map();
+  let inFlight   = false;
 
   const showSpin = on => $overlay.style.display = on ? "flex" : "none";
   const badge = ok => `<span class="badge ${ok ? "ok" : "no"}">${ok ? "Yes" : "No"}</span>`;
-  const setStatus = s => $status.textContent = s;
+  const setStatus = s => { $status.textContent = s; console.log("[CV] status:", s); };
 
-  // Accept multiple shapes from n8n; return {items,total}
-  function sanitizeRows(list){
-    return list.map(r => ({
-      name    : r?.name ?? "",
-      fieldKey: r?.fieldKey ?? "",
-      value   : r?.value ?? null,
-      id      : r?.id ?? null,
-    }));
-  }
+  // ===== Parser =====
+  const sanitizeRows = list => list.map(r => ({
+    name    : r?.name ?? "",
+    fieldKey: r?.fieldKey ?? "",
+    value   : r?.value ?? null,
+    id      : r?.id ?? null,
+  }));
+
   function parsePayload(payload){
     let obj = payload;
     if (Array.isArray(obj)) {
-      if (obj[0] && obj[0].json && typeof obj[0].json === "object") {
-        obj = obj[0].json;
-      } else {
-        const maybeSubset = obj;
-        return { items: sanitizeRows(maybeSubset), total: maybeSubset.length };
-      }
+      if (obj[0] && obj[0].json && typeof obj[0].json === "object") obj = obj[0].json;
+      else return { items: sanitizeRows(obj), total: obj.length };
     }
     if (obj && obj.json && typeof obj.json === "object") obj = obj.json;
-
     const subset =
       (Array.isArray(obj?.customValuesSubset) && obj.customValuesSubset) ||
       (Array.isArray(obj?.customValues)       && obj.customValues)       ||
       (Array.isArray(obj?.data)               && obj.data)               || [];
-
-    return {
-      items: sanitizeRows(subset),
-      total: Number(obj?.totalCount ?? subset.length) || 0,
-    };
+    return { items: sanitizeRows(subset), total: Number(obj?.totalCount ?? subset.length) || 0 };
   }
 
+  // ===== Renderers =====
   function applyFilter(){
     const q = ($search.value||"").trim().toLowerCase();
     filtered = !q ? pageItems : pageItems.filter(r => (r.name||"").toLowerCase().includes(q));
@@ -293,7 +239,7 @@
 
   function renderList(){
     $listBody.innerHTML = "";
-    if (filtered.length === 0){
+    if (!filtered.length){
       $listBody.innerHTML = `<tr><td colspan="3" class="muted" style="padding:14px">No results.</td></tr>`;
       return;
     }
@@ -315,12 +261,10 @@
   }
 
   function highlightRow(fieldKey){
-    // left side highlight
     [...$listBody.querySelectorAll("tr")].forEach(tr=>{
       if (tr.children[1] && tr.children[1].textContent.trim() === fieldKey.trim()) tr.classList.add("sel");
       else tr.classList.remove("sel");
     });
-    // right side highlight
     [...$editBody.querySelectorAll("tr")].forEach(tr=>{
       const cell = tr.querySelector("[data-k]");
       if (cell && cell.dataset.k === fieldKey) tr.classList.add("sel");
@@ -330,7 +274,7 @@
 
   function renderEditor(){
     $editBody.innerHTML = "";
-    if (filtered.length === 0){
+    if (!filtered.length){
       $editBody.innerHTML = `<tr><td colspan="3" class="muted" style="padding:14px">No items to edit.</td></tr>`;
       return;
     }
@@ -342,25 +286,17 @@
         <td class="mono" data-k="${row.fieldKey}">${row.fieldKey || ""}</td>
         <td>
           <input class="value-input" data-key="${row.fieldKey}" data-id="${row.id||''}" data-name="${row.name||''}"
-                 value="${(initial ?? '').toString().replace(/"/g,'&quot;')}"
-                 placeholder="(empty)" />
+                 value="${(initial ?? '').toString().replace(/"/g,'&quot;')}" placeholder="(empty)" />
         </td>
       `;
       const input = tr.querySelector("input.value-input");
       input.addEventListener("input", (e)=>{
-        // force single-line (GHL strips newlines)
-        const clean = e.target.value.replace(/\r?\n/g, " ");
+        const clean = e.target.value.replace(/\r?\n/g, " "); // GHL strips newlines
         if (clean !== e.target.value) e.target.value = clean;
-
         const fv = (clean ?? "").trim();
         const ov = (row.value ?? "").toString();
-        if (fv !== ov){
-          input.classList.add("changed");
-          edited.set(row.fieldKey, { id: row.id, fieldKey: row.fieldKey, value: clean, name: row.name });
-        }else{
-          input.classList.remove("changed");
-          edited.delete(row.fieldKey);
-        }
+        if (fv !== ov){ input.classList.add("changed"); edited.set(row.fieldKey, { id: row.id, fieldKey: row.fieldKey, value: clean, name: row.name }); }
+        else { input.classList.remove("changed"); edited.delete(row.fieldKey); }
         renderQueue();
       });
       $editBody.appendChild(tr);
@@ -371,7 +307,7 @@
     $chips.innerHTML = "";
     const arr = [...edited.values()];
     $queueCount.textContent = `${arr.length} change${arr.length===1?"":"s"}`;
-    if (arr.length === 0) return;
+    if (!arr.length) return;
     arr.forEach(u=>{
       const chip = document.createElement("span");
       chip.className = "chip";
@@ -395,103 +331,76 @@
     $btnNext.disabled = serverPage >= totalPages;
   }
 
-  // ---------- Single in-flight fetch ----------
-  let inFlight = false;
-
-async function fetchPage() {
-  if (inFlight) {
-    console.debug("[CV] fetch ignored (already in flight)");
-    return;
-  }
-  inFlight = true;
-
-  const locationId = ($loc.value || getQS("locationId","")).trim();
-  pageSize = Math.max(1, parseInt($size.value)||10);
-  sortKind = $sort.value || "name-asc";
-
-  const payload = { locationId, page: serverPage, pageSize, sort: sortKind };
-  console.log("[CV] → POST", READ_URL, payload, "origin:", location.origin);
-
-  showSpin(true);
-  setStatus("Loading…");
-
-  try {
-    const res = await fetch(READ_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Accept": "application/json"
-      },
-      body: JSON.stringify(payload)
-    });
-
-    const txt = await res.text();
-    console.log("[CV] ← status", res.status, res.statusText, "body:", txt);
-
-    if (!res.ok) {
-      throw new Error(`Read ${res.status} ${res.statusText || ""}`);
-    }
-
-    let data = {};
-    try {
-      data = txt ? JSON.parse(txt) : {};
-    } catch (parseErr) {
-      console.warn("[CV] JSON parse failed:", parseErr);
-    }
-
-    const { items, total } = parsePayload(data);
-    pageItems = items;
-    totalCount = total;
-
-    applyFilter();
-    renderList();
-    renderEditor();
-    renderMeta();
-
-    setStatus(
-      items.length
-        ? `Loaded ${items.length} item${items.length===1?"":"s"} on this page.`
-        : "No items returned for this page."
-    );
-  } catch (err) {
-    console.error("[CV] fetch error:", err);
-    setStatus(err?.message || String(err));
-  } finally {
-    showSpin(false);
-    inFlight = false;
-  }
-}
-
-
-  // Events
-  $btnPrev.addEventListener("click", ()=>{ if (serverPage>1){ serverPage--; fetchPage(); }});
-  $btnNext.addEventListener("click", ()=>{ serverPage++; fetchPage(); });
-  $fetch.addEventListener("click", fetchPage);
-  $search.addEventListener("input", ()=>{ applyFilter(); renderList(); renderEditor(); renderMeta(); });
-
-  $btnClear.addEventListener("click", ()=>{
-    edited.clear();
-    document.querySelectorAll(".value-input.changed").forEach(el=>el.classList.remove("changed"));
-    renderQueue();
-  });
-
-  $btnSaveAll.addEventListener("click", async ()=>{
-    if (!WRITE_URL){ $saveMsg.innerHTML = `<span class="muted">Set <code>writeUrl</code> to enable saving.</span>`; return; }
+  // ===== FETCH (single in-flight) =====
+  async function fetchPage() {
+    if (inFlight) { console.log("[CV] fetch ignored (already in-flight)"); return; }
     const locationId = ($loc.value || getQS("locationId","")).trim();
-    const updates = [...edited.values()].map(({id, fieldKey, value}) => ({ id, fieldKey, value }));
-    if (updates.length === 0){ $saveMsg.innerHTML = `<span class="muted">No changes to save.</span>`; return; }
+    if (!locationId){ setStatus("Enter a Location ID"); return; }
 
+    pageSize = Math.max(1, parseInt($size.value)||20);
+    sortKind = $sort.value || "name-asc";
+
+    const body = { locationId, page: serverPage, pageSize, sort: sortKind };
+    inFlight = true; showSpin(true); setStatus("Loading…");
+    console.log("[CV] → POST", READ_URL, "payload:", body, "origin:", location.origin);
+
+    try {
+      const res = await fetch(READ_URL, {
+        method: "POST",
+        mode: "cors",
+        credentials: "omit",
+        redirect: "follow",
+        referrerPolicy: "no-referrer",
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        cache: "no-store",
+        body: JSON.stringify(body)
+      });
+
+      const txt = await res.text();
+      console.log("[CV] ←", res.status, res.statusText, "raw:", txt);
+      if (!res.ok) throw new Error(`Read ${res.status}${res.statusText ? " " + res.statusText : ""}`);
+
+      let data = {}; try { data = txt ? JSON.parse(txt) : {}; } catch(e){ console.warn("[CV] JSON parse issue:", e); }
+      const { items, total } = parsePayload(data);
+      pageItems  = items;
+      totalCount = total;
+
+      applyFilter();
+      renderList();
+      renderEditor();
+      renderQueue();
+      renderMeta();
+
+      setStatus(items.length ? `Loaded ${items.length} item${items.length===1?"":"s"} on this page.` : "No items returned for this page.");
+    } catch (e) {
+      setStatus(e?.message || String(e));
+      console.debug("[CV] fetch error:", e);
+    } finally {
+      showSpin(false); inFlight = false;
+    }
+  }
+
+  // ===== SAVE (bulk) =====
+  async function saveAll(){
+    if (!WRITE_URL){ $saveMsg.innerHTML = `<span class="muted">Set <code>writeUrl</code> to enable saving.</span>`; return; }
+    const updates = [...edited.values()].map(({id, fieldKey, value}) => ({ id, fieldKey, value }));
+    if (!updates.length){ $saveMsg.innerHTML = `<span class="muted">No changes to save.</span>`; return; }
+
+    const locationId = ($loc.value || getQS("locationId","")).trim();
     $btnSaveAll.disabled = true; $saveMsg.textContent = "Saving…"; showSpin(true);
+
     try{
       const res = await fetch(WRITE_URL, {
         method:"POST",
-        headers:{ "Content-Type":"application/json" },
+        mode: "cors",
+        credentials: "omit",
+        headers:{ "Content-Type":"application/json", "Accept":"application/json" },
         body: JSON.stringify({ locationId, updates })
       });
-      const t = await res.text(); let p={}; try{ p = t?JSON.parse(t):{} }catch{}
+      const t = await res.text();
+      console.log("[CV] save ←", res.status, res.statusText, "raw:", t);
       if (!res.ok) throw new Error(`Write ${res.status}`);
 
-      // Optimistically commit local values
       updates.forEach(u=>{
         const item = pageItems.find(x=>x.fieldKey===u.fieldKey);
         if (item) item.value = u.value;
@@ -499,16 +408,24 @@ async function fetchPage() {
         if (inp) inp.classList.remove("changed");
       });
       edited.clear();
-      renderQueue(); renderList(); // refresh badges on left
+      renderQueue(); renderList();
       $saveMsg.innerHTML = `<span style="color:var(--good)">Saved ${updates.length} update${updates.length===1?"":"s"} ✔</span>`;
     }catch(e){
       $saveMsg.innerHTML = `<span style="color:var(--bad)">${e?.message || e}</span>`;
     }finally{
       $btnSaveAll.disabled = false; showSpin(false);
     }
-  });
+  }
 
-  // Boot
+  // ===== Events =====
+  $("btnPrev").addEventListener("click", ()=>{ if (serverPage>1){ serverPage--; fetchPage(); }});
+  $("btnNext").addEventListener("click", ()=>{ serverPage++; fetchPage(); });
+  $("btnFetch").addEventListener("click", fetchPage);
+  $("search").addEventListener("input", ()=>{ applyFilter(); renderList(); renderEditor(); renderMeta(); });
+  $("btnClear").addEventListener("click", ()=>{ edited.clear(); document.querySelectorAll(".value-input.changed").forEach(el=>el.classList.remove("changed")); renderQueue(); });
+  $("btnSaveAll").addEventListener("click", saveAll);
+
+  // ===== Boot =====
   (function init(){
     const initLoc = getQS("locationId","");
     if (initLoc) $loc.value = initLoc;
