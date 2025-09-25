@@ -208,7 +208,7 @@
           <button id="btnSaveAll" class="btn primary">Save updates</button>
         </div>
       </div>
-      <div id="saveMsg" style="margin-top:8px"></div>
+      <div id="saveMsg" style="margin-top:8px;"></div>
     </div>
 
   </div>
@@ -254,12 +254,36 @@
   const badge = ok => `<span class="badge ${ok ? "ok" : "no"}">${ok ? "Yes" : "No"}</span>`;
   const setStatus = s => $status.textContent = s;
 
-  function normalize(payload){
-    if (!payload) return { items:[], total:0, page:serverPage, pageSize, sort:sortKind };
-    const obj = Array.isArray(payload) ? payload[0] : payload;
-    const items = Array.isArray(obj?.customValuesSubset) ? obj.customValuesSubset : (Array.isArray(obj) ? obj : []);
-    const total = Number(obj?.totalCount ?? items.length) || 0;
-    return { items, total, page: Number(obj?.page)||serverPage, pageSize: Number(obj?.pageSize)||pageSize, sort: String(obj?.sort||sortKind) };
+  // Accept multiple shapes from n8n; return {items,total}
+  function sanitizeRows(list){
+    return list.map(r => ({
+      name    : r?.name ?? "",
+      fieldKey: r?.fieldKey ?? "",
+      value   : r?.value ?? null,
+      id      : r?.id ?? null,
+    }));
+  }
+  function parsePayload(payload){
+    let obj = payload;
+    if (Array.isArray(obj)) {
+      if (obj[0] && obj[0].json && typeof obj[0].json === "object") {
+        obj = obj[0].json;
+      } else {
+        const maybeSubset = obj;
+        return { items: sanitizeRows(maybeSubset), total: maybeSubset.length };
+      }
+    }
+    if (obj && obj.json && typeof obj.json === "object") obj = obj.json;
+
+    const subset =
+      (Array.isArray(obj?.customValuesSubset) && obj.customValuesSubset) ||
+      (Array.isArray(obj?.customValues)       && obj.customValues)       ||
+      (Array.isArray(obj?.data)               && obj.data)               || [];
+
+    return {
+      items: sanitizeRows(subset),
+      total: Number(obj?.totalCount ?? subset.length) || 0,
+    };
   }
 
   function applyFilter(){
@@ -282,7 +306,6 @@
         <td>${badge(hasVal)}</td>
       `;
       tr.addEventListener("click", ()=>{
-        // Scroll matching input into view on right
         const el = document.querySelector(\`input[data-key="\${row.fieldKey}"]\`);
         if (el){ el.focus({preventScroll:false}); el.scrollIntoView({block:"center"}); }
         highlightRow(row.fieldKey);
@@ -292,12 +315,12 @@
   }
 
   function highlightRow(fieldKey){
-    // left side
+    // left side highlight
     [...$listBody.querySelectorAll("tr")].forEach(tr=>{
       if (tr.children[1] && tr.children[1].textContent.trim() === fieldKey.trim()) tr.classList.add("sel");
       else tr.classList.remove("sel");
     });
-    // right side
+    // right side highlight
     [...$editBody.querySelectorAll("tr")].forEach(tr=>{
       const cell = tr.querySelector("[data-k]");
       if (cell && cell.dataset.k === fieldKey) tr.classList.add("sel");
@@ -355,7 +378,6 @@
       chip.innerHTML = `<span class="mono" title="${u.fieldKey}">${(u.name||u.fieldKey).slice(0,40)}</span>
                         <span class="x" aria-label="remove" title="Remove">×</span>`;
       chip.querySelector(".x").addEventListener("click", ()=>{
-        // remove from map and clear visual change
         edited.delete(u.fieldKey);
         const inp = document.querySelector(\`input[data-key="\${u.fieldKey}"]\`);
         if (inp) inp.classList.remove("changed");
@@ -373,31 +395,49 @@
     $btnNext.disabled = serverPage >= totalPages;
   }
 
-  async function fetchPage(){
+  // ---------- Single in-flight fetch ----------
+  async function fetchPage() {
     const locationId = ($loc.value || getQS("locationId","")).trim();
     pageSize = Math.max(1, parseInt($size.value)||10);
     sortKind = $sort.value || "name-asc";
 
-    showSpin(true); setStatus("Loading…");
-    try{
+    showSpin(true);                 // turn spinner on BEFORE any await
+    setStatus("Loading…");
+    try {
       const res = await fetch(READ_URL, {
-        method:"POST",
-        headers:{ "Content-Type":"application/json" },
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
         body: JSON.stringify({ locationId, page: serverPage, pageSize, sort: sortKind })
       });
-      const txt = await res.text(); let payload={}; try{ payload = txt?JSON.parse(txt):{} }catch{}
-      if (!res.ok) throw new Error(`Read ${res.status}`);
 
-      const { items, total, page, pageSize:ps, sort } = normalize(payload);
-      totalCount = total; serverPage = page; pageSize = ps; sortKind = sort;
-      pageItems = items.map(r=>({ id:r.id, name:r.name, fieldKey:r.fieldKey, value:r.value ?? "" }));
+      const txt = await res.text();
+      let payload = {};
+      try { payload = txt ? JSON.parse(txt) : {}; } catch {}
+
+      if (!res.ok) throw new Error(`Read ${res.status}${res.statusText ? " " + res.statusText : ""}`);
+
+      const { items, total } = parsePayload(payload);
+      pageItems  = items;
+      totalCount = total;
+
       applyFilter();
-      renderList(); renderEditor(); renderMeta();
-      setStatus(`Loaded ${pageItems.length} item${pageItems.length===1?"":"s"} on this page.`);
-    }catch(e){
+      renderList();
+      renderEditor();
+      renderMeta();
+
+      setStatus(
+        items.length
+          ? `Loaded ${items.length} item${items.length===1?"":"s"} on this page.`
+          : "No items returned for this page."
+      );
+    } catch (e) {
       setStatus(e?.message || String(e));
-    }finally{
-      showSpin(false);
+      console.debug("[CV Widget] fetch error / raw:", e);
+    } finally {
+      showSpin(false);              // ALWAYS turns spinner off
     }
   }
 
@@ -409,7 +449,6 @@
 
   $btnClear.addEventListener("click", ()=>{
     edited.clear();
-    // remove highlights
     document.querySelectorAll(".value-input.changed").forEach(el=>el.classList.remove("changed"));
     renderQueue();
   });
