@@ -3,115 +3,85 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Custom Values — Minimal Widget</title>
+  <title>Custom Values — Widget</title>
   <style>
-    :root{
-      --bg:#0f1115;--panel:#17191e;--border:#2b2f36;--txt:#fff;--muted:#a1a1aa;
-      --ok:#34d399;--bad:#ef4444;--accent:#fb923c;--btn:#11151b
-    }
-    *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--txt);
-      font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
-    .wrap{max-width:720px;margin:0 auto;padding:24px}
-    h1{margin:0 0 6px;font-size:22px} .muted{color:var(--muted)}
-    .card{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:16px;margin:0 0 16px}
-    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:end}
-    .input,.btn,.select,textarea{background:var(--btn);color:var(--txt);border:1px solid var(--border);border-radius:10px;padding:8px 10px;outline:none}
-    .btn{cursor:pointer;font-weight:700} .btn.primary{background:var(--accent);color:#000;border-color:var(--accent)}
-    .btn:disabled{opacity:.6;cursor:default}
-    .kv{display:grid;grid-template-columns:140px 1fr;gap:8px;margin-top:10px}
-    .lbl{color:#d4d4d8} .mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:#d1d5db}
-    .badge{display:inline-flex;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:800;border:1px solid transparent}
+    :root{--bg:#0f1115;--panel:#17191e;--border:#2b2f36;--txt:#fff;--muted:#a1a1aa}
+    *{box-sizing:border-box} body{margin:0;padding:0;background:var(--bg);color:var(--txt);font:14px/1.4 sans-serif}
+    .wrap{max-width:600px;margin:0 auto;padding:24px}
+    h1{margin:0 0 8px;font-size:22px} .muted{color:var(--muted)}
+    .card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+    .input,.btn,.select,textarea{background:#11151b;color:var(--txt);border:1px solid var(--border);border-radius:8px;padding:8px;outline:none}
+    .btn{cursor:pointer;font-weight:600} .btn:disabled{opacity:.6;cursor:default}
+    .kv{display:grid;grid-template-columns:120px 1fr;gap:8px;margin-top:16px}
+    .lbl{color:var(--muted)} .mono{font-family:ui-monospace; font-size:12px; color:#d1d5db}
+    .badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;border:1px solid transparent}
     .badge.ok{background:rgba(52,211,153,.15);color:#bbf7d0;border-color:rgba(52,211,153,.4)}
     .badge.no{background:rgba(239,68,68,.10);color:#fecaca;border-color:rgba(239,68,68,.4)}
-    .toolbar{display:flex;gap:10px;align-items:center;margin-top:12px}
-    .err{color:#fecaca} .note{color:#c7f9cc}
+    .toolbar{margin-top:16px;display:flex;gap:10px;align-items:center}
+    .err{color:#fecaca} .note{color:#a1f0b6}
   </style>
 </head>
 <body>
   <div class="wrap">
     <h1>Custom Values Viewer</h1>
-    <p class="muted">Shows one value at a time. Use <b>Next</b> to step through. <b>Save</b> (optional) will call your write webhook if configured.</p>
+    <p class="muted">Use <b>readUrl</b> (and optionally <b>writeUrl</b>) query params to override endpoints.</p>
 
     <div class="card">
       <div class="row">
         <label style="flex:1">
-          <div class="muted" style="margin-bottom:6px">Location ID</div>
-          <input id="locationId" class="input" placeholder="KH4yu0WzfV8a6I2UnY61" />
+          <div class="muted" style="margin-bottom:4px">Location ID</div>
+          <input id="locationId" class="input" placeholder="KH4..." />
         </label>
         <label>
-          <div class="muted" style="margin-bottom:6px">Page size</div>
+          <div class="muted" style="margin-bottom:4px">Page size</div>
           <select id="pageSize" class="select">
             <option>1</option><option selected>10</option><option>20</option><option>50</option>
           </select>
         </label>
-        <button id="btnFetch" class="btn primary">Fetch</button>
+        <button id="btnFetch" class="btn">Fetch</button>
       </div>
       <div id="status" style="margin-top:8px"></div>
     </div>
 
-    <div id="viewer" class="card" style="display:none">
+    <div id="viewer" class="card" style="display:none;">
       <div class="kv">
-        <div class="lbl">Display Name</div>
-        <div id="cvName"></div>
-
-        <div class="lbl">Field Key</div>
-        <div id="cvKey" class="mono"></div>
-
-        <div class="lbl">Has Value?</div>
-        <div id="cvHas"></div>
-
-        <div class="lbl">Value (editable)</div>
-        <div><textarea id="cvValue" rows="6" style="width:100%"></textarea></div>
+        <div class="lbl">Display Name</div><div id="cvName"></div>
+        <div class="lbl">Field Key</div><div id="cvKey" class="mono"></div>
+        <div class="lbl">Has Value?</div><div id="cvHas"></div>
+        <div class="lbl">Value</div><div><textarea id="cvValue" rows="4" style="width:100%"></textarea></div>
       </div>
-
       <div class="toolbar">
-        <button id="btnSave" class="btn" title="Sends { locationId, updates:[{fieldKey,value}] }">Save</button>
+        <button id="btnSave" class="btn">Save</button>
         <button id="btnNext" class="btn">Next</button>
-        <span class="muted" id="pager"></span>
+        <span id="pager" class="muted"></span>
       </div>
-
-      <div id="saveMsg" style="margin-top:8px"></div>
+      <div id="saveMsg" style="margin-top:8px;"></div>
     </div>
   </div>
 
   <script>
-    // ================================
-    // CONFIG (edit here)
-    // ================================
-    const READ_URL  = "https://api.visquanta.com/webhook/call-custom-values-data";
-    // Optional write endpoint; leave blank to disable Save button for now:
-    const WRITE_URL = ""; // e.g. "https://api.visquanta.com/webhook/update-custom-values"
+    const getQS = (k, fb = "") => {
+      const qs = new URLSearchParams(window.location.search);
+      const v = qs.get(k) || fb;
+      try { return /%[0-9A-F]{2}/i.test(v) ? decodeURIComponent(v) : v; } catch { return v; }
+    };
 
-    // URL params helper
-    const qs = new URLSearchParams(location.search);
-    const getQS = (k, fb="") => { const v = qs.get(k) || fb; try {return /%[0-9A-F]{2}/i.test(v)?decodeURIComponent(v):v;} catch {return v;} };
+    const READ_DEFAULT = "https://api.visquanta.com/webhook/call-custom-values-data";
+    const WRITE_DEFAULT = ""; // optional
 
-    // Elements
-    const el = (id)=>document.getElementById(id);
-    const $loc    = el("locationId");
-    const $size   = el("pageSize");
-    const $fetch  = el("btnFetch");
-    const $status = el("status");
-    const $viewer = el("viewer");
-    const $name   = el("cvName");
-    const $key    = el("cvKey");
-    const $has    = el("cvHas");
-    const $val    = el("cvValue");
-    const $save   = el("btnSave");
-    const $next   = el("btnNext");
-    const $pager  = el("pager");
-    const $saveMsg= el("saveMsg");
+    const READ_URL = getQS("readUrl", READ_DEFAULT);
+    const WRITE_URL = getQS("writeUrl", WRITE_DEFAULT);
 
-    // State
-    let items = [];     // [{name, fieldKey, value}]
-    let idx = 0;
-    let edited = new Map(); // fieldKey -> value
+    const el = id => document.getElementById(id);
+    const $loc = el("locationId"), $size = el("pageSize"), $fetch = el("btnFetch");
+    const $status = el("status"), $viewer = el("viewer");
+    const $name = el("cvName"), $key = el("cvKey"), $has = el("cvHas"), $val = el("cvValue");
+    const $save = el("btnSave"), $next = el("btnNext"), $pager = el("pager"), $saveMsg = el("saveMsg");
 
-    // Init from URL
-    $loc.value  = getQS("locationId", "");
-    $size.value = getQS("pageSize", "10");
+    let items = [], idx = 0, edited = new Map();
 
-    function normalize(payload){
+    function normalize(payload) {
       if (!payload) return [];
       if (Array.isArray(payload)) return payload;
       if (Array.isArray(payload.customValues)) return payload.customValues;
@@ -119,25 +89,27 @@
       return [];
     }
 
-    function badge(ok){ return `<span class="badge ${ok?'ok':'no'}">${ok?'Yes':'No'}</span>` }
+    function badge(ok) {
+      return `<span class="badge ${ok ? "ok" : "no"}">${ok ? "Yes":"No"}</span>`;
+    }
 
-    function render(){
-      if (!items.length){ $viewer.style.display="none"; return; }
+    function render() {
+      if (!items.length) { $viewer.style.display = "none"; return; }
       const cur = items[idx];
       $viewer.style.display = "block";
       $name.textContent = cur.name || "";
-      $key.textContent  = cur.fieldKey || "";
+      $key.textContent = cur.fieldKey || "";
       const val = edited.has(cur.fieldKey) ? edited.get(cur.fieldKey) : (cur.value ?? "");
       $val.value = val;
       $has.innerHTML = badge(String(val).trim() !== "");
-      $pager.textContent = `Item ${idx+1} of ${items.length}`;
+      $pager.textContent = `Item ${idx+1} / ${items.length}`;
       $save.disabled = !WRITE_URL;
     }
 
     $val.addEventListener("input", () => {
-      const cur = items[idx]; if (!cur) return;
+      const cur = items[idx];
+      if (!cur) return;
       edited.set(cur.fieldKey, $val.value);
-      // live update badge
       $has.innerHTML = badge(String($val.value).trim() !== "");
     });
 
@@ -149,53 +121,71 @@
     });
 
     $save.addEventListener("click", async () => {
-      if (!WRITE_URL){ $saveMsg.innerHTML = '<span class="muted">Set WRITE_URL in the file to enable saving.</span>'; return; }
-      const cur = items[idx]; if (!cur) return;
+      if (!WRITE_URL) {
+        $saveMsg.innerHTML = '<span class="muted">WRITE URL not set.</span>';
+        return;
+      }
+      const cur = items[idx];
+      if (!cur) return;
       const newVal = edited.has(cur.fieldKey) ? edited.get(cur.fieldKey) : (cur.value ?? "");
       const locationId = $loc.value.trim();
-      $save.disabled = true; $saveMsg.textContent = "Saving…";
-      try{
+      $save.disabled = true;
+      $saveMsg.textContent = "Saving…";
+      try {
         const res = await fetch(WRITE_URL, {
-          method:"POST",
-          headers:{ "Content-Type":"application/json" },
-          body: JSON.stringify({ locationId, updates:[{ fieldKey: cur.fieldKey, value: newVal }] })
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            locationId,
+            updates: [{ fieldKey: cur.fieldKey, value: newVal }]
+          })
         });
-        const text = await res.text(); let payload={}; try{ payload = text?JSON.parse(text):{} }catch{}
-        if (!res.ok) throw new Error(`Write returned ${res.status}`);
-        // optimistic update
+        const text = await res.text();
+        let payload = {};
+        try { payload = text ? JSON.parse(text) : {}; } catch {}
+        if (!res.ok) throw new Error(`Write ${res.status}`);
         cur.value = newVal;
         edited.delete(cur.fieldKey);
-        $saveMsg.innerHTML = '<span class="note">Saved ✔︎</span>';
-      }catch(e){
+        $saveMsg.innerHTML = '<span class="note">Saved ✔</span>';
+      } catch (e) {
         $saveMsg.innerHTML = `<span class="err">${e.message || e}</span>`;
-      }finally{ $save.disabled = false; render(); }
+      } finally {
+        $save.disabled = false;
+        render();
+      }
     });
 
     $fetch.addEventListener("click", async () => {
       const locationId = $loc.value.trim();
-      const pageSize = Math.max(1, parseInt($size.value, 10) || 10);
+      const pageSize = Math.max(1, parseInt($size.value) || 10);
       $status.textContent = "Loading…";
-      $viewer.style.display="none"; items=[]; idx=0; edited.clear(); $saveMsg.textContent="";
-      try{
+      $viewer.style.display = "none";
+      items = []; idx = 0; edited.clear(); $saveMsg.textContent = "";
+      try {
         const res = await fetch(READ_URL, {
-          method:"POST",
-          headers:{ "Content-Type":"application/json" },
-          body: JSON.stringify({ locationId, page:1, pageSize, sort:"name-asc" })
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ locationId, page: 1, pageSize, sort: "name-asc" })
         });
-        const text = await res.text(); let payload = {};
-        try{ payload = text ? JSON.parse(text) : {}; } catch { payload = { raw:text }; }
-        if (!res.ok) throw new Error(`Fetch returned ${res.status}`);
+        const text = await res.text();
+        let payload = {};
+        try { payload = text ? JSON.parse(text) : {}; } catch {}
+        if (!res.ok) throw new Error(`Read ${res.status}`);
         items = normalize(payload);
-        if (!Array.isArray(items)) items = [];
-        // if more than pageSize returned, show first pageSize only (simple client page)
         items = items.slice(0, pageSize);
-        $status.textContent = `Loaded ${items.length} item${items.length===1?"":"s"}.`;
+        $status.textContent = `Loaded ${items.length} item${items.length === 1 ? "" : "s"}.`;
         render();
-      }catch(e){
+      } catch (e) {
         $status.innerHTML = `<span class="err">${e.message || e}</span>`;
       }
     });
+
+    // optionally auto-fetch if locationId is in QS
+    const initialLoc = getQS("locationId", "");
+    if (initialLoc) {
+      $loc.value = initialLoc;
+      $fetch.click();
+    }
   </script>
 </body>
 </html>
-
