@@ -1,3 +1,4 @@
+<!-- BEGIN INDEX.HTML (replace entire file) -->
 <!doctype html>
 <html lang="en">
   <head>
@@ -5,10 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Custom Values Widget</title>
     <meta name="robots" content="noindex" />
-    <link rel="stylesheet" href="/custom-values-tool/styles.css" />
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/custom-values-tool/src/main.tsx"></script>
+    <!-- Vite dev uses /src/main.tsx; the prod build rewrites to /custom-values-tool/assets/... -->
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
+<!-- END INDEX.HTML -->
