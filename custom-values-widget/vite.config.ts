@@ -1,9 +1,7 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-
-// IMPORTANT: set base to '/<repo-name>/' for GitHub Pages
-// If your repo is aaron-rowley/custom-values-tool, base should be '/custom-values-tool/'
+// BEGIN VITE CONFIG (paste over your current export)
 export default defineConfig({
   plugins: [react()],
+  // Must match your repo name for GitHub Pages project site:
   base: '/custom-values-tool/',
-})
+});
+// END VITE CONFIG
