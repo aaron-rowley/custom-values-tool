@@ -3,351 +3,373 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Custom Values — Widget</title>
+<title>Custom Values — Viewer</title>
 <style>
   :root{
-    --bg:#0b0d12;        /* page bg (near-black) */
-    --panel:#141820;     /* card bg */
-    --border:#2a3140;    /* subtle borders */
-    --txt:#f5f7fb;       /* main text */
-    --muted:#99a1b3;     /* secondary text */
-    --accent:#ff7a18;    /* orange accent */
+    --bg:#0f1115; --panel:#17191e; --border:#2b2f36; --txt:#fff; --muted:#a1a1aa;
+    --accent:#ff8a00; --accent-soft:rgba(255,138,0,.12);
   }
   *{box-sizing:border-box}
-  html,body{height:100%}
-  body{
-    margin:0; padding:0; background:var(--bg); color:var(--txt);
-    font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
-  }
-  .wrap{max-width:860px;margin:0 auto;padding:28px}
-  h1{margin:0 0 6px; font-size:24px; letter-spacing:.2px}
+  body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
+  .wrap{max-width:980px;margin:0 auto;padding:24px}
+  h1{margin:0 0 8px;font-size:22px}
   .muted{color:var(--muted)}
-  .code{font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12px}
-
-  .card{
-    background:var(--panel);
-    border:1px solid var(--border);
-    border-radius:16px;
-    padding:16px;
-    margin-bottom:18px;
-    box-shadow: 0 8px 18px rgba(0,0,0,.25);
-  }
-  .row{display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end}
-  .col{flex:1 1 240px}
-
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px;margin:12px 0}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
   .input,.btn,.select,textarea{
-    background:#0e1219; color:var(--txt);
-    border:1px solid var(--border); border-radius:10px;
-    padding:10px 12px; outline:none;
-    transition: box-shadow .15s ease, border-color .15s ease;
+    background:#11151b;color:var(--txt);border:1px solid var(--border);border-radius:10px;padding:8px 10px;outline:none
   }
-  .input:focus, .select:focus, textarea:focus{
-    border-color:#39455c; box-shadow:0 0 0 3px rgba(255,122,24,.2);
-  }
-  .btn{ cursor:pointer; font-weight:700; letter-spacing:.2px }
-  .btn:disabled{ opacity:.6; cursor:default }
-  .btn.primary{
-    background:linear-gradient(180deg, #ff9b37, var(--accent));
-    color:#1a1208; border:1px solid #f0902f;
-    box-shadow:0 0 12px rgba(255,122,24,.35), inset 0 -4px 12px rgba(0,0,0,.2);
-  }
-  .btn.ghost{
-    background:#0e1219; color:var(--txt); border:1px solid var(--border);
-  }
+  .btn{cursor:pointer;font-weight:700}
+  .btn.primary{background:var(--accent);color:#111;border-color:#000}
+  .btn:disabled{opacity:.6;cursor:default}
+  .right{margin-left:auto}
+  .grid{display:grid;gap:10px}
+  .grid-2{grid-template-columns: 1fr 1fr}
+  .grid-3{grid-template-columns: 1fr 1fr 1fr}
+  .mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:#d1d5db}
+  .badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;border:1px solid transparent}
+  .ok{background:rgba(52,211,153,.15);color:#bbf7d0;border-color:rgba(52,211,153,.4)}
+  .no{background:rgba(239,68,68,.10);color:#fecaca;border-color:rgba(239,68,68,.4)}
+  .split{display:grid;grid-template-columns: minmax(340px, 1fr) minmax(360px, 1fr);gap:16px}
+  table{width:100%;border-collapse:separate;border-spacing:0}
+  th,td{padding:10px 12px;border-bottom:1px solid var(--border);text-align:left}
+  tr:hover{background:#0f141a}
+  tr.sel{background:var(--accent-soft)}
+  .pill{border:1px solid var(--border);border-radius:999px;padding:6px 10px}
+  .err{color:#fecaca}
+  .note{color:#a1f0b6}
 
-  .kv{display:grid; grid-template-columns:160px 1fr; gap:10px; margin-top:14px}
-  .lbl{color:var(--muted)}
-  .mono{font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12px; color:#c9d1e5}
-
-  .badge{
-    display:inline-block; padding:2px 10px; border-radius:999px;
-    font-size:11px; border:1px solid transparent; font-weight:700;
-  }
-  .badge.ok{ background:rgba(52,211,153,.12); color:#bdf8d0; border-color:rgba(52,211,153,.35) }
-  .badge.no{ background:rgba(239,68,68,.12); color:#ffd0d0; border-color:rgba(239,68,68,.35) }
-
-  .toolbar{ margin-top:14px; display:flex; gap:10px; align-items:center; flex-wrap:wrap }
-  .spacer{flex:1}
-  .err{color:#ffb3b3}
-  .note{color:#b2ffc7}
-
-  /* ====== Full-page loading overlay with orange glow spinner ====== */
-  .overlay {
-    position: fixed; inset: 0; display: none; place-items: center;
-    background: rgba(8,10,14,.55); backdrop-filter: blur(2px);
-    z-index: 40;
-  }
-  .overlay.show { display: grid; }
-
-  .spinner {
-    width: 56px; height: 56px; border-radius: 50%;
-    border: 3px solid rgba(255,122,24,.18);
-    border-top-color: var(--accent);
-    animation: spin 0.85s linear infinite;
-    /* soft orange outer glow + inner highlight */
+  /* Spinner overlay */
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;backdrop-filter:blur(2px);z-index:50}
+  .spinner{
+    width:68px;height:68px;border-radius:50%;
+    background:
+      radial-gradient(circle at 30% 30%, rgba(255,138,0,.85), transparent 55%),
+      radial-gradient(circle at 70% 70%, rgba(255,138,0,.35), transparent 45%),
+      #0b0b0b;
     box-shadow:
-      0 0 20px rgba(255,122,24,.55),
-      0 0 60px rgba(255,122,24,.25),
-      inset 0 0 10px rgba(255,122,24,.25);
+      0 0 24px rgba(255,138,0,.35),
+      0 0 60px rgba(255,138,0,.18) inset,
+      0 0 4px rgba(255,138,0,.7) inset;
+    animation: spin 1.1s linear infinite, pulse 1.6s ease-in-out infinite;
+    border:2px solid rgba(255,138,0,.35);
   }
-  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes spin {to{transform:rotate(360deg)}}
+  @keyframes pulse {50%{box-shadow:
+      0 0 36px rgba(255,138,0,.55),
+      0 0 90px rgba(255,138,0,.28) inset,
+      0 0 6px rgba(255,138,0,1) inset;
+  }}
 
-  /* small helper chips */
-  .chip{display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border:1px solid var(--border); border-radius:999px; color:var(--muted)}
-  .sep{opacity:.35}
+  /* Small bits */
+  .toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .spacer{flex:1}
 </style>
 </head>
 <body>
-  <!-- Loading overlay -->
-  <div id="overlay" class="overlay"><div class="spinner" aria-label="Loading"></div></div>
+<div class="wrap">
+  <h1>Custom Values Viewer</h1>
+  <p class="muted">Static widget that reads from your n8n webhook and shows one value at a time (click a row). You can wire a write endpoint later.
+    <br/>Tip: override endpoints via URL: <code>?readUrl=https://...&writeUrl=https://...&locationId=...&page=1&pageSize=10&sort=name-asc</code>
+  </p>
 
-  <div class="wrap">
-    <h1>Custom Values Viewer</h1>
-    <p class="muted">
-      Static widget that reads from your n8n webhook and shows one value at a time. You can wire a write endpoint later.<br/>
-      Tip: override endpoints via URL:
-      <span class="code">?readUrl=https://...&amp;writeUrl=https://...</span>
-    </p>
+  <!-- Controls -->
+  <div class="card">
+    <div class="row">
+      <label style="flex:1">
+        <div class="muted" style="margin-bottom:4px">Location ID</div>
+        <input id="locationId" class="input" placeholder="KH4..." />
+      </label>
 
-    <!-- Controls -->
-    <div class="card">
-      <div class="row">
-        <label class="col">
-          <div class="muted" style="margin-bottom:6px">Location ID</div>
-          <input id="locationId" class="input" placeholder="KH4..." />
-        </label>
+      <label>
+        <div class="muted" style="margin-bottom:4px">Page size</div>
+        <select id="pageSize" class="select">
+          <option>10</option><option>20</option><option>50</option>
+        </select>
+      </label>
 
-        <label style="width:120px">
-          <div class="muted" style="margin-bottom:6px">Page size</div>
-          <select id="pageSize" class="select">
-            <option>1</option><option selected>10</option><option>20</option><option>50</option>
-          </select>
-        </label>
+      <label>
+        <div class="muted" style="margin-bottom:4px">Sort</div>
+        <select id="sort" class="select">
+          <option value="name-asc">Name A–Z</option>
+          <option value="name-desc">Name Z–A</option>
+          <option value="key-asc">Key A–Z</option>
+          <option value="key-desc">Key Z–A</option>
+        </select>
+      </label>
 
-        <button id="btnFetch" class="btn primary" style="height:40px; padding:0 16px">Fetch</button>
-      </div>
-
-      <div class="row" style="margin-top:10px">
-        <label class="col">
-          <div class="muted" style="margin-bottom:6px">Search (by Display Name)</div>
-          <input id="search" class="input" placeholder="Start typing to filter…" />
-        </label>
-        <div class="chip"><span id="status">Idle.</span></div>
-      </div>
+      <button id="btnFetch" class="btn primary">Fetch</button>
     </div>
 
-    <!-- Viewer -->
-    <div id="viewer" class="card" style="display:none;">
-      <div class="kv">
-        <div class="lbl">Display Name</div>
-        <div id="cvName"></div>
-
-        <div class="lbl">Field Key</div>
-        <div id="cvKey" class="mono"></div>
-
-        <div class="lbl">Has Value?</div>
-        <div id="cvHas"></div>
-
-        <div class="lbl">Value</div>
-        <div><textarea id="cvValue" rows="6" style="width:100%"></textarea></div>
-      </div>
-
-      <div class="toolbar">
-        <button id="btnSave" class="btn ghost">Save</button>
-        <button id="btnPrev" class="btn ghost">Prev</button>
-        <button id="btnNext" class="btn primary">Next</button>
-        <div class="spacer"></div>
-        <span id="pager" class="muted code"></span>
-      </div>
-      <div id="saveMsg" style="margin-top:8px;"></div>
+    <div class="row" style="margin-top:10px">
+      <label style="flex:1">
+        <div class="muted" style="margin-bottom:4px">Search (by Display Name)</div>
+        <input id="search" class="input" placeholder="Start typing to filter..." />
+      </label>
+      <div id="status" class="pill right">—</div>
     </div>
   </div>
 
+  <div class="split">
+    <!-- List -->
+    <div class="card">
+      <div class="toolbar" style="margin-bottom:8px">
+        <strong>Results</strong>
+        <div class="spacer"></div>
+        <button id="btnPrevPage" class="btn">Prev page</button>
+        <button id="btnNextPage" class="btn">Next page</button>
+        <span id="pageInfo" class="muted"></span>
+      </div>
+
+      <div class="grid">
+        <table id="tbl">
+          <thead>
+            <tr class="muted">
+              <th style="width:44%">Display Name</th>
+              <th style="width:38%">Field Key</th>
+              <th style="width:18%">Has Value?</th>
+            </tr>
+          </thead>
+          <tbody id="tbody">
+            <tr><td colspan="3" class="muted">No data. Click <b>Fetch</b>.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Editor -->
+    <div class="card">
+      <div class="grid">
+        <div class="muted">Display Name</div>
+        <div id="cvName">—</div>
+
+        <div class="muted">Field Key</div>
+        <div id="cvKey" class="mono">—</div>
+
+        <div class="muted">Has Value?</div>
+        <div id="cvHas"><span class="badge no">No</span></div>
+
+        <div class="muted">Value</div>
+        <div><textarea id="cvValue" rows="8" style="width:100%"></textarea></div>
+      </div>
+
+      <div class="toolbar" style="margin-top:12px">
+        <button id="btnSave" class="btn">Save</button>
+        <button id="btnPrevItem" class="btn">Prev</button>
+        <button id="btnNextItem" class="btn">Next</button>
+        <div class="spacer"></div>
+        <span id="itemInfo" class="muted"></span>
+      </div>
+
+      <div id="saveMsg" style="margin-top:8px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Spinner -->
+<div id="overlay" class="overlay" aria-live="polite" aria-busy="true">
+  <div class="spinner" title="Loading"></div>
+</div>
+
 <script>
-  // ---------------------------
-  // Query param helper
-  // ---------------------------
+  // ---------- QS helpers ----------
+  const qs = new URLSearchParams(location.search);
   const getQS = (k, fb="") => {
-    const qs = new URLSearchParams(window.location.search);
-    const v = qs.get(k) || fb;
+    const v = qs.get(k) ?? fb;
     try { return /%[0-9A-F]{2}/i.test(v) ? decodeURIComponent(v) : v; } catch { return v; }
   };
+  const toInt = (v, fb) => { const n = parseInt(v,10); return Number.isFinite(n)&&n>0 ? n : fb; };
 
-  // ---------------------------
-  // Endpoints (overridable)
-  // ---------------------------
+  // ---------- Endpoints (override-able via URL) ----------
   const READ_DEFAULT  = "https://api.visquanta.com/webhook/call-custom-values-data";
-  const WRITE_DEFAULT = ""; // optional
+  const WRITE_DEFAULT = ""; // set later when writer is ready
   const READ_URL  = getQS("readUrl", READ_DEFAULT);
   const WRITE_URL = getQS("writeUrl", WRITE_DEFAULT);
 
-  // ---------------------------
-  // DOM refs
-  // ---------------------------
-  const el = id => document.getElementById(id);
-  const $overlay = el("overlay");
-  const $loc     = el("locationId");
-  const $size    = el("pageSize");
-  const $fetch   = el("btnFetch");
-  const $status  = el("status");
-  const $search  = el("search");
+  // ---------- DOM ----------
+  const $ = id => document.getElementById(id);
+  const $loc  = $("locationId"), $size = $("pageSize"), $sort = $("sort"), $fetch = $("btnFetch");
+  const $status = $("status"), $search = $("search");
+  const $tbody = $("tbody"), $pageInfo = $("pageInfo"), $overlay = $("overlay");
+  const $btnPrevPage = $("btnPrevPage"), $btnNextPage = $("btnNextPage");
 
-  const $viewer  = el("viewer");
-  const $name    = el("cvName");
-  const $key     = el("cvKey");
-  const $has     = el("cvHas");
-  const $val     = el("cvValue");
-  const $save    = el("btnSave");
-  const $prev    = el("btnPrev");
-  const $next    = el("btnNext");
-  const $pager   = el("pager");
-  const $saveMsg = el("saveMsg");
+  const $cvName=$("cvName"), $cvKey=$("cvKey"), $cvHas=$("cvHas"), $cvValue=$("cvValue");
+  const $btnSave=$("btnSave"), $saveMsg=$("saveMsg"), $itemInfo=$("itemInfo");
+  const $btnPrevItem=$("btnPrevItem"), $btnNextItem=$("btnNextItem");
 
-  // ---------------------------
-  // State
-  // ---------------------------
-  let items  = [];      // full set returned from server (page 1..N on backend)
-  let fItems = [];      // filtered via search (subset of items)
-  let idx    = 0;       // pointer into fItems
-  let edited = new Map();
+  // ---------- State ----------
+  let serverPage = Math.max(1, toInt(getQS("page"), 1));
+  let pageSize   = Math.max(1, toInt(getQS("pageSize"), 10));
+  let sortKind   = getQS("sort","name-asc");
 
-  // ---------------------------
-  // Helpers
-  // ---------------------------
-  const showOverlay = (on=true)=> $overlay.classList.toggle("show", !!on);
+  let totalCount = 0;
+  let pageItems  = [];            // rows for *this* server page
+  let filtered   = [];            // rows after local filter
+  let selIdx     = 0;             // index within filtered
+  const edited   = new Map();     // fieldKey -> unsaved value
+
+  $size.value = String(pageSize);
+  $sort.value = sortKind;
+
+  // ---------- UI helpers ----------
+  const showSpin = (on) => $overlay.style.display = on ? "flex" : "none";
   const badge = ok => `<span class="badge ${ok ? "ok":"no"}">${ok ? "Yes":"No"}</span>`;
+  const setStatus = (msg) => $status.textContent = msg;
 
-  function normalize(payload){
-    if (!payload) return [];
-    if (Array.isArray(payload)) {
-      if (payload.length && Array.isArray(payload[0]?.customValuesSubset)) return payload[0].customValuesSubset;
-      return payload;
-    }
-    if (Array.isArray(payload.customValuesSubset)) return payload.customValuesSubset;
-    if (Array.isArray(payload.customValues)) return payload.customValues;
-    if (Array.isArray(payload.data)) return payload.data;
-    return [];
+  function applyFilter() {
+    const q = ($search.value || "").trim().toLowerCase();
+    filtered = !q ? pageItems : pageItems.filter(r => (r.name||"").toLowerCase().includes(q));
+    if (filtered.length === 0) selIdx = 0; else selIdx = Math.min(selIdx, filtered.length-1);
   }
 
-  function applyFilter(){
-    const q = $search.value.trim().toLowerCase();
-    if (!q) { fItems = [...items]; return; }
-    fItems = items.filter(v => (v.name || "").toLowerCase().includes(q));
-  }
-
-  function render(){
-    if (!fItems.length) {
-      $viewer.style.display = "none";
-      $status.textContent = "No matching items.";
+  function renderList() {
+    $tbody.innerHTML = "";
+    if (filtered.length === 0) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td colspan="3" class="muted">No results.</td>`;
+      $tbody.appendChild(tr);
       return;
     }
-    const cur = fItems[idx];
-    $viewer.style.display = "block";
-    $name.textContent = cur.name || "";
-    $key.textContent  = cur.fieldKey || "";
-    const currentVal  = edited.has(cur.fieldKey) ? edited.get(cur.fieldKey) : (cur.value ?? "");
-    $val.value = currentVal;
-    $has.innerHTML = badge(String(currentVal).trim() !== "");
-    $pager.textContent = `Item ${idx+1} / ${fItems.length}`;
-    $save.disabled = !WRITE_URL;
+    filtered.forEach((row, i) => {
+      const tr = document.createElement("tr");
+      if (i === selIdx) tr.classList.add("sel");
+      tr.innerHTML = `
+        <td><div class="name">${row.name||""}</div></td>
+        <td class="mono">${row.fieldKey||""}</td>
+        <td>${badge(!!(row.value && String(row.value).trim()))}</td>
+      `;
+      tr.addEventListener("click", ()=>{
+        selIdx = i;
+        renderList();
+        renderDetail();
+      });
+      $tbody.appendChild(tr);
+    });
   }
 
-  // Live typing → update "Has value?" and stash edits
-  $val.addEventListener("input", () => {
-    const cur = fItems[idx]; if (!cur) return;
-    edited.set(cur.fieldKey, $val.value);
-    $has.innerHTML = badge(String($val.value).trim() !== "");
+  function renderDetail() {
+    if (!filtered.length) {
+      $cvName.textContent = "—"; $cvKey.textContent="—"; $cvHas.innerHTML=badge(false); $cvValue.value=""; $itemInfo.textContent="";
+      $btnSave.disabled = !WRITE_URL;
+      return;
+    }
+    const cur = filtered[selIdx];
+    $cvName.textContent = cur.name || "";
+    $cvKey.textContent  = cur.fieldKey || "";
+    const val = edited.has(cur.fieldKey) ? edited.get(cur.fieldKey) : (cur.value ?? "");
+    $cvValue.value = val;
+    $cvHas.innerHTML = badge(String(val).trim() !== "");
+    $itemInfo.textContent = `Item ${selIdx+1} / ${filtered.length}`;
+    $btnSave.disabled = !WRITE_URL;
+  }
+
+  function renderPager() {
+    const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+    $pageInfo.textContent = `Page ${Math.min(serverPage,totalPages)} of ${totalPages} • ${totalCount} total`;
+    $btnPrevPage.disabled = serverPage <= 1;
+    $btnNextPage.disabled = serverPage >= totalPages;
+  }
+
+  // ---------- Fetch (server page) ----------
+  async function fetchPage() {
+    const locationId = ($loc.value || getQS("locationId","")).trim();
+    pageSize = Math.max(1, parseInt($size.value)||10);
+    sortKind = $sort.value || "name-asc";
+
+    showSpin(true);
+    setStatus("Loading…");
+    try {
+      const res = await fetch(READ_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ locationId, page: serverPage, pageSize, sort: sortKind })
+      });
+      const txt = await res.text();
+      let payload={}; try{ payload = txt ? JSON.parse(txt) : {}; }catch{}
+      if (!res.ok) throw new Error(`Read ${res.status}`);
+
+      // Accept any of these shapes produced by your n8n "Sort + Paginate + Shape" node:
+      // { customValuesSubset:[...], totalCount, page, pageSize, sort }
+      // OR an array with the object as [0]
+      let obj = Array.isArray(payload) ? payload[0] : payload;
+      pageItems  = Array.isArray(obj?.customValuesSubset) ? obj.customValuesSubset : (Array.isArray(obj) ? obj : []);
+      totalCount = Number(obj?.totalCount ?? pageItems.length) || 0;
+
+      // reset selection on new page
+      selIdx = 0;
+      applyFilter();
+      renderList();
+      renderDetail();
+      renderPager();
+      setStatus(`Loaded ${pageItems.length} item${pageItems.length===1?"":"s"} on this page.`);
+    } catch(e){
+      setStatus(e?.message || String(e));
+    } finally {
+      showSpin(false);
+    }
+  }
+
+  // ---------- Events ----------
+  $("btnPrevPage").addEventListener("click", ()=>{ if (serverPage>1){ serverPage--; fetchPage(); }});
+  $("btnNextPage").addEventListener("click", ()=>{ serverPage++; fetchPage(); });
+
+  $fetch.addEventListener("click", ()=>{
+    serverPage = Math.max(1, toInt(qs.get("page"), 1)); // keep current unless query forces it
+    fetchPage();
   });
 
-  // Search
-  $search.addEventListener("input", () => {
-    applyFilter();
-    idx = 0;
-    render();
+  $search.addEventListener("input", ()=>{ applyFilter(); renderList(); renderDetail(); });
+
+  $cvValue.addEventListener("input", ()=>{
+    if (!filtered.length) return;
+    const cur = filtered[selIdx];
+    edited.set(cur.fieldKey, $cvValue.value);
+    $cvHas.innerHTML = badge(String($cvValue.value).trim() !== "");
   });
 
-  // Pager
-  $prev.addEventListener("click", () => {
-    if (!fItems.length) return;
-    idx = (idx - 1 + fItems.length) % fItems.length;
-    $saveMsg.textContent = "";
-    render();
+  $btnPrevItem.addEventListener("click", ()=>{
+    if (!filtered.length) return;
+    selIdx = (selIdx - 1 + filtered.length) % filtered.length;
+    renderList(); renderDetail();
   });
-  $next.addEventListener("click", () => {
-    if (!fItems.length) return;
-    idx = (idx + 1) % fItems.length;
-    $saveMsg.textContent = "";
-    render();
+  $btnNextItem.addEventListener("click", ()=>{
+    if (!filtered.length) return;
+    selIdx = (selIdx + 1) % filtered.length;
+    renderList(); renderDetail();
   });
 
-  // Save (optional)
-  $save.addEventListener("click", async () => {
-    if (!WRITE_URL) { $saveMsg.innerHTML = '<span class="muted">WRITE URL not set.</span>'; return; }
-    const cur = fItems[idx]; if (!cur) return;
-
-    const locationId = $loc.value.trim();
+  $btnSave.addEventListener("click", async ()=>{
+    if (!WRITE_URL || !filtered.length) return;
+    const cur = filtered[selIdx];
     const newVal = edited.has(cur.fieldKey) ? edited.get(cur.fieldKey) : (cur.value ?? "");
-
-    $save.disabled = true; $saveMsg.textContent = "Saving…";
+    const locationId = ($loc.value || getQS("locationId","")).trim();
+    $btnSave.disabled = true; $saveMsg.textContent = "Saving…";
     try{
-      showOverlay(true);
       const res = await fetch(WRITE_URL, {
         method:"POST",
-        headers:{ "Content-Type":"application/json" },
+        headers: { "Content-Type":"application/json" },
         body: JSON.stringify({ locationId, updates:[{ fieldKey: cur.fieldKey, value:newVal }] })
       });
-      const text = await res.text();
-      let payload={}; try{ payload = text ? JSON.parse(text) : {}; }catch{}
+      const t = await res.text(); let p={}; try{ p = t?JSON.parse(t):{} }catch{}
       if (!res.ok) throw new Error(`Write ${res.status}`);
-      // optimistic update
+      // commit
       cur.value = newVal; edited.delete(cur.fieldKey);
+      renderList(); renderDetail();
       $saveMsg.innerHTML = '<span class="note">Saved ✔</span>';
     }catch(e){
       $saveMsg.innerHTML = `<span class="err">${e?.message || e}</span>`;
     }finally{
-      $save.disabled = false; showOverlay(false); render();
+      $btnSave.disabled = false;
     }
   });
 
-  // Fetch
-  $fetch.addEventListener("click", async () => {
-    const locationId = $loc.value.trim();
-    const pageSize = Math.max(1, parseInt($size.value) || 10);
-
-    // reset UI
-    $status.textContent = "Loading…";
-    $saveMsg.textContent = "";
-    $viewer.style.display = "none";
-    items = []; fItems = []; idx = 0; edited.clear();
-    showOverlay(true);
-
-    try{
-      const res = await fetch(READ_URL, {
-        method:"POST",
-        headers:{ "Content-Type":"application/json" },
-        body: JSON.stringify({ locationId, page:1, pageSize, sort:"name-asc" })
-      });
-      const text = await res.text();
-      let payload={}; try{ payload = text ? JSON.parse(text) : {}; }catch{}
-      if (!res.ok) throw new Error(`Read ${res.status}`);
-
-      items = normalize(payload).slice(0, pageSize);
-      applyFilter();
-      $status.textContent = `Loaded ${items.length} item${items.length===1?"":"s"}.`;
-      render();
-    }catch(e){
-      $status.innerHTML = `<span class="err">${e?.message || e}</span>`;
-    }finally{
-      showOverlay(false);
-    }
-  });
-
-  // Auto-fill & optional auto-fetch
-  const initialLoc  = getQS("locationId", "");
-  const initialSize = getQS("pageSize", "");
-  if (initialLoc)  $loc.value  = initialLoc;
-  if (initialSize) $size.value = initialSize;
-  if (initialLoc)  $fetch.click();
+  // ---------- Auto bootstrap ----------
+  (function init(){
+    const initLoc = getQS("locationId","");
+    if (initLoc) $loc.value = initLoc;
+    // Default: load immediately if locationId was provided in URL
+    if (initLoc) fetchPage(); else setStatus("Ready.");
+  })();
 </script>
 </body>
 </html>
