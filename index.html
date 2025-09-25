@@ -3,41 +3,74 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Custom Values — Viewer</title>
+<title>Custom Values — Bulk Editor</title>
 <style>
   :root{
     --bg:#0f1115; --panel:#17191e; --border:#2b2f36; --txt:#fff; --muted:#a1a1aa;
-    --accent:#ff8a00; --accent-soft:rgba(255,138,0,.12);
+    --accent:#ff8a00; --accent-soft:rgba(255,138,0,.12); --accent-2: rgba(255,138,0,.22);
+    --good:#34d399; --bad:#ef4444;
   }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
-  .wrap{max-width:980px;margin:0 auto;padding:24px}
-  h1{margin:0 0 8px;font-size:22px}
+  html,body{height:100%}
+  body{
+    margin:0;background:var(--bg);color:var(--txt);
+    font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial
+  }
+  .app{min-height:100%;display:flex;flex-direction:column}
+  .wrap{width:100%;max-width:1200px;margin:0 auto;padding:20px 16px;flex:1;display:flex;flex-direction:column;gap:12px}
+
+  h1{margin:0;font-size:22px}
   .muted{color:var(--muted)}
-  .card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px;margin:12px 0}
+
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:14px}
+  .pad{padding:14px}
   .row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
-  .input,.btn,.select,textarea{
-    background:#11151b;color:var(--txt);border:1px solid var(--border);border-radius:10px;padding:8px 10px;outline:none
+  .pill{border:1px solid var(--border);border-radius:999px;padding:6px 10px}
+
+  .input,.btn,.select{
+    background:#11151b;color:var(--txt);border:1px solid var(--border);
+    border-radius:10px;padding:8px 10px;outline:none;min-height:36px
   }
   .btn{cursor:pointer;font-weight:700}
   .btn.primary{background:var(--accent);color:#111;border-color:#000}
+  .btn.ghost{background:transparent}
   .btn:disabled{opacity:.6;cursor:default}
-  .right{margin-left:auto}
-  .grid{display:grid;gap:10px}
-  .grid-2{grid-template-columns: 1fr 1fr}
-  .grid-3{grid-template-columns: 1fr 1fr 1fr}
+
+  /* Layout: top controls, middle 2-column, bottom queue */
+  .two{
+    display:grid;grid-template-columns: 1fr minmax(420px, 1.2fr); gap:12px; align-items:stretch;
+  }
+  @media (max-width: 980px){
+    .two{grid-template-columns: 1fr}
+  }
+
+  /* Left column: results list */
+  .left .head{display:flex;align-items:center;gap:8px;padding:10px;border-bottom:1px solid var(--border)}
+  .table-wrap{max-height:60vh;overflow:auto}
+  table{width:100%;border-collapse:separate;border-spacing:0}
+  th,td{padding:10px 12px;border-bottom:1px solid var(--border);text-align:left;vertical-align:middle}
+  thead th{position:sticky;top:0;background:var(--panel);z-index:1}
+  tr:hover{background:#0f141a}
   .mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:#d1d5db}
   .badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;border:1px solid transparent}
   .ok{background:rgba(52,211,153,.15);color:#bbf7d0;border-color:rgba(52,211,153,.4)}
   .no{background:rgba(239,68,68,.10);color:#fecaca;border-color:rgba(239,68,68,.4)}
-  .split{display:grid;grid-template-columns: minmax(340px, 1fr) minmax(360px, 1fr);gap:16px}
-  table{width:100%;border-collapse:separate;border-spacing:0}
-  th,td{padding:10px 12px;border-bottom:1px solid var(--border);text-align:left}
-  tr:hover{background:#0f141a}
-  tr.sel{background:var(--accent-soft)}
-  .pill{border:1px solid var(--border);border-radius:999px;padding:6px 10px}
-  .err{color:#fecaca}
-  .note{color:#a1f0b6}
+  .sel{outline:2px solid var(--accent-2);outline-offset:-2px}
+
+  /* Right column: editable table (scrolls) */
+  .editor .head{display:flex;align-items:center;gap:8px;padding:10px;border-bottom:1px solid var(--border)}
+  .edit-table{max-height:60vh;overflow:auto}
+  .value-input{
+    width:100%;min-width:200px;background:#0f141a;border:1px solid var(--border);
+    color:var(--txt);border-radius:8px;padding:7px 9px;outline:none
+  }
+  .value-input.changed{box-shadow:0 0 0 2px var(--accent-2) inset;border-color:var(--accent)}
+
+  /* Bottom queue */
+  .queue .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{display:inline-flex;gap:8px;align-items:center;background:#11151b;border:1px solid var(--border);border-radius:999px;padding:6px 10px}
+  .chip .x{cursor:pointer;font-weight:900;opacity:.8}
+  .queue .bar{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-top:10px}
 
   /* Spinner overlay */
   .overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;backdrop-filter:blur(2px);z-index:50}
@@ -60,315 +93,366 @@
       0 0 90px rgba(255,138,0,.28) inset,
       0 0 6px rgba(255,138,0,1) inset;
   }}
-
-  /* Small bits */
-  .toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-  .spacer{flex:1}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <h1>Custom Values Viewer</h1>
-  <p class="muted">Static widget that reads from your n8n webhook and shows one value at a time (click a row). You can wire a write endpoint later.
-    <br/>Tip: override endpoints via URL: <code>?readUrl=https://...&writeUrl=https://...&locationId=...&page=1&pageSize=10&sort=name-asc</code>
-  </p>
-
-  <!-- Controls -->
-  <div class="card">
-    <div class="row">
-      <label style="flex:1">
-        <div class="muted" style="margin-bottom:4px">Location ID</div>
-        <input id="locationId" class="input" placeholder="KH4..." />
-      </label>
-
-      <label>
-        <div class="muted" style="margin-bottom:4px">Page size</div>
-        <select id="pageSize" class="select">
-          <option>10</option><option>20</option><option>50</option>
-        </select>
-      </label>
-
-      <label>
-        <div class="muted" style="margin-bottom:4px">Sort</div>
-        <select id="sort" class="select">
-          <option value="name-asc">Name A–Z</option>
-          <option value="name-desc">Name Z–A</option>
-          <option value="key-asc">Key A–Z</option>
-          <option value="key-desc">Key Z–A</option>
-        </select>
-      </label>
-
-      <button id="btnFetch" class="btn primary">Fetch</button>
+<div class="app">
+  <div class="wrap">
+    <div>
+      <h1>Custom Values Viewer</h1>
+      <p class="muted">Full-width, responsive widget. Read from n8n; edit on the right; queue changes below and send only the updates.  
+        URL overrides: <code>?readUrl=...&writeUrl=...&locationId=...&page=1&pageSize=10&sort=name-asc</code>
+      </p>
     </div>
 
-    <div class="row" style="margin-top:10px">
-      <label style="flex:1">
-        <div class="muted" style="margin-bottom:4px">Search (by Display Name)</div>
-        <input id="search" class="input" placeholder="Start typing to filter..." />
-      </label>
-      <div id="status" class="pill right">—</div>
-    </div>
-  </div>
+    <!-- Controls -->
+    <div class="card pad">
+      <div class="row">
+        <label style="flex:1">
+          <div class="muted" style="margin-bottom:4px">Location ID</div>
+          <input id="locationId" class="input" placeholder="KH4..." />
+        </label>
 
-  <div class="split">
-    <!-- List -->
-    <div class="card">
-      <div class="toolbar" style="margin-bottom:8px">
-        <strong>Results</strong>
-        <div class="spacer"></div>
-        <button id="btnPrevPage" class="btn">Prev page</button>
-        <button id="btnNextPage" class="btn">Next page</button>
-        <span id="pageInfo" class="muted"></span>
+        <label>
+          <div class="muted" style="margin-bottom:4px">Page size</div>
+          <select id="pageSize" class="select"><option>10</option><option>20</option><option>50</option></select>
+        </label>
+
+        <label>
+          <div class="muted" style="margin-bottom:4px">Sort</div>
+          <select id="sort" class="select">
+            <option value="name-asc">Name A–Z</option>
+            <option value="name-desc">Name Z–A</option>
+            <option value="key-asc">Key A–Z</option>
+            <option value="key-desc">Key Z–A</option>
+          </select>
+        </label>
+
+        <button id="btnFetch" class="btn primary">Fetch</button>
+
+        <div id="status" class="pill" style="margin-left:auto">Ready.</div>
       </div>
 
-      <div class="grid">
-        <table id="tbl">
-          <thead>
-            <tr class="muted">
-              <th style="width:44%">Display Name</th>
-              <th style="width:38%">Field Key</th>
-              <th style="width:18%">Has Value?</th>
-            </tr>
-          </thead>
-          <tbody id="tbody">
-            <tr><td colspan="3" class="muted">No data. Click <b>Fetch</b>.</td></tr>
-          </tbody>
-        </table>
+      <div class="row" style="margin-top:10px">
+        <label style="flex:1">
+          <div class="muted" style="margin-bottom:4px">Search by Display Name (client filter)</div>
+          <input id="search" class="input" placeholder="Type to filter..." />
+        </label>
+
+        <div class="row" style="margin-left:auto">
+          <button id="btnPrev" class="btn">Prev page</button>
+          <button id="btnNext" class="btn">Next page</button>
+          <div id="pager" class="pill">—</div>
+        </div>
       </div>
     </div>
 
-    <!-- Editor -->
-    <div class="card">
-      <div class="grid">
-        <div class="muted">Display Name</div>
-        <div id="cvName">—</div>
-
-        <div class="muted">Field Key</div>
-        <div id="cvKey" class="mono">—</div>
-
-        <div class="muted">Has Value?</div>
-        <div id="cvHas"><span class="badge no">No</span></div>
-
-        <div class="muted">Value</div>
-        <div><textarea id="cvValue" rows="8" style="width:100%"></textarea></div>
+    <!-- Middle two-panel -->
+    <div class="two">
+      <!-- Left: results list -->
+      <div class="card left">
+        <div class="head">
+          <strong>Results</strong>
+          <span id="countInfo" class="muted" style="margin-left:auto"></span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr class="muted">
+                <th style="width:42%">Display Name</th>
+                <th style="width:40%">Field Key</th>
+                <th style="width:18%">Has Value?</th>
+              </tr>
+            </thead>
+            <tbody id="listBody">
+              <tr><td colspan="3" class="muted" style="padding:14px">No data. Click <b>Fetch</b>.</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      <div class="toolbar" style="margin-top:12px">
-        <button id="btnSave" class="btn">Save</button>
-        <button id="btnPrevItem" class="btn">Prev</button>
-        <button id="btnNextItem" class="btn">Next</button>
-        <div class="spacer"></div>
-        <span id="itemInfo" class="muted"></span>
+      <!-- Right: editable table -->
+      <div class="card editor">
+        <div class="head">
+          <strong>Page items (editable)</strong>
+          <span class="muted" style="margin-left:auto">Single-line inputs (newlines → spaces)</span>
+        </div>
+        <div class="edit-table">
+          <table>
+            <thead>
+              <tr class="muted">
+                <th style="width:34%">Name</th>
+                <th style="width:40%">Field Key</th>
+                <th style="width:26%">Value</th>
+              </tr>
+            </thead>
+            <tbody id="editBody">
+              <tr><td colspan="3" class="muted" style="padding:14px">Nothing loaded yet.</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
+    </div>
 
+    <!-- Bottom queue -->
+    <div class="card pad queue">
+      <div class="row" style="margin-bottom:8px">
+        <strong>Queued updates</strong>
+        <span id="queueCount" class="muted">0 changes</span>
+      </div>
+      <div id="chips" class="chips"></div>
+      <div class="bar">
+        <div class="muted">Only changed rows will be sent. Remove any chip to discard that edit.</div>
+        <div class="row">
+          <button id="btnClear" class="btn ghost">Clear</button>
+          <button id="btnSaveAll" class="btn primary">Save updates</button>
+        </div>
+      </div>
       <div id="saveMsg" style="margin-top:8px"></div>
     </div>
+
   </div>
 </div>
 
 <!-- Spinner -->
-<div id="overlay" class="overlay" aria-live="polite" aria-busy="true">
-  <div class="spinner" title="Loading"></div>
-</div>
+<div id="overlay" class="overlay" aria-live="polite" aria-busy="true"><div class="spinner" title="Loading"></div></div>
 
 <script>
-  // ---------- QS helpers ----------
+  // ---------- Helpers ----------
   const qs = new URLSearchParams(location.search);
-  const getQS = (k, fb="") => {
-    const v = qs.get(k) ?? fb;
-    try { return /%[0-9A-F]{2}/i.test(v) ? decodeURIComponent(v) : v; } catch { return v; }
-  };
-  const toInt = (v, fb) => { const n = parseInt(v,10); return Number.isFinite(n)&&n>0 ? n : fb; };
+  const getQS = (k, fb="") => { const v = qs.get(k) ?? fb; try{ return /%[0-9A-F]{2}/i.test(v)?decodeURIComponent(v):v }catch{ return v } };
+  const toInt = (v, fb) => { const n = parseInt(v,10); return Number.isFinite(n) && n>0 ? n : fb };
 
-  // ---------- Endpoints (override-able via URL) ----------
   const READ_DEFAULT  = "https://api.visquanta.com/webhook/call-custom-values-data";
-  const WRITE_DEFAULT = ""; // set later when writer is ready
+  const WRITE_DEFAULT = ""; // pass writeUrl=... to enable saving
+
   const READ_URL  = getQS("readUrl", READ_DEFAULT);
   const WRITE_URL = getQS("writeUrl", WRITE_DEFAULT);
 
-  // ---------- DOM ----------
   const $ = id => document.getElementById(id);
-  const $loc  = $("locationId"), $size = $("pageSize"), $sort = $("sort"), $fetch = $("btnFetch");
-  const $status = $("status"), $search = $("search");
-  const $tbody = $("tbody"), $pageInfo = $("pageInfo"), $overlay = $("overlay");
-  const $btnPrevPage = $("btnPrevPage"), $btnNextPage = $("btnNextPage");
+  const $loc=$("locationId"), $size=$("pageSize"), $sort=$("sort"), $fetch=$("btnFetch");
+  const $status=$("status"), $pager=$("pager"), $countInfo=$("countInfo");
+  const $btnPrev=$("btnPrev"), $btnNext=$("btnNext"), $search=$("search");
+  const $listBody=$("listBody"), $editBody=$("editBody");
+  const $chips=$("chips"), $queueCount=$("queueCount"), $btnClear=$("btnClear"), $btnSaveAll=$("btnSaveAll"), $saveMsg=$("saveMsg");
+  const $overlay=$("overlay");
 
-  const $cvName=$("cvName"), $cvKey=$("cvKey"), $cvHas=$("cvHas"), $cvValue=$("cvValue");
-  const $btnSave=$("btnSave"), $saveMsg=$("saveMsg"), $itemInfo=$("itemInfo");
-  const $btnPrevItem=$("btnPrevItem"), $btnNextItem=$("btnNextItem");
-
-  // ---------- State ----------
+  // State
   let serverPage = Math.max(1, toInt(getQS("page"), 1));
   let pageSize   = Math.max(1, toInt(getQS("pageSize"), 10));
   let sortKind   = getQS("sort","name-asc");
 
-  let totalCount = 0;
-  let pageItems  = [];            // rows for *this* server page
-  let filtered   = [];            // rows after local filter
-  let selIdx     = 0;             // index within filtered
-  const edited   = new Map();     // fieldKey -> unsaved value
-
   $size.value = String(pageSize);
   $sort.value = sortKind;
 
-  // ---------- UI helpers ----------
-  const showSpin = (on) => $overlay.style.display = on ? "flex" : "none";
-  const badge = ok => `<span class="badge ${ok ? "ok":"no"}">${ok ? "Yes":"No"}</span>`;
-  const setStatus = (msg) => $status.textContent = msg;
+  let totalCount = 0;
+  let pageItems  = [];   // raw items from server page
+  let filtered   = [];   // filtered by search
+  const edited   = new Map(); // key: fieldKey -> { id, fieldKey, value, name }
 
-  function applyFilter() {
-    const q = ($search.value || "").trim().toLowerCase();
-    filtered = !q ? pageItems : pageItems.filter(r => (r.name||"").toLowerCase().includes(q));
-    if (filtered.length === 0) selIdx = 0; else selIdx = Math.min(selIdx, filtered.length-1);
+  const showSpin = on => $overlay.style.display = on ? "flex" : "none";
+  const badge = ok => `<span class="badge ${ok ? "ok" : "no"}">${ok ? "Yes" : "No"}</span>`;
+  const setStatus = s => $status.textContent = s;
+
+  function normalize(payload){
+    if (!payload) return { items:[], total:0, page:serverPage, pageSize, sort:sortKind };
+    const obj = Array.isArray(payload) ? payload[0] : payload;
+    const items = Array.isArray(obj?.customValuesSubset) ? obj.customValuesSubset : (Array.isArray(obj) ? obj : []);
+    const total = Number(obj?.totalCount ?? items.length) || 0;
+    return { items, total, page: Number(obj?.page)||serverPage, pageSize: Number(obj?.pageSize)||pageSize, sort: String(obj?.sort||sortKind) };
   }
 
-  function renderList() {
-    $tbody.innerHTML = "";
-    if (filtered.length === 0) {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `<td colspan="3" class="muted">No results.</td>`;
-      $tbody.appendChild(tr);
+  function applyFilter(){
+    const q = ($search.value||"").trim().toLowerCase();
+    filtered = !q ? pageItems : pageItems.filter(r => (r.name||"").toLowerCase().includes(q));
+  }
+
+  function renderList(){
+    $listBody.innerHTML = "";
+    if (filtered.length === 0){
+      $listBody.innerHTML = `<tr><td colspan="3" class="muted" style="padding:14px">No results.</td></tr>`;
       return;
     }
-    filtered.forEach((row, i) => {
+    filtered.forEach(row => {
+      const hasVal = !!(row.value && String(row.value).trim());
       const tr = document.createElement("tr");
-      if (i === selIdx) tr.classList.add("sel");
       tr.innerHTML = `
-        <td><div class="name">${row.name||""}</div></td>
-        <td class="mono">${row.fieldKey||""}</td>
-        <td>${badge(!!(row.value && String(row.value).trim()))}</td>
+        <td>${row.name || ""}</td>
+        <td class="mono">${row.fieldKey || ""}</td>
+        <td>${badge(hasVal)}</td>
       `;
       tr.addEventListener("click", ()=>{
-        selIdx = i;
-        renderList();
-        renderDetail();
+        // Scroll matching input into view on right
+        const el = document.querySelector(\`input[data-key="\${row.fieldKey}"]\`);
+        if (el){ el.focus({preventScroll:false}); el.scrollIntoView({block:"center"}); }
+        highlightRow(row.fieldKey);
       });
-      $tbody.appendChild(tr);
+      $listBody.appendChild(tr);
     });
   }
 
-  function renderDetail() {
-    if (!filtered.length) {
-      $cvName.textContent = "—"; $cvKey.textContent="—"; $cvHas.innerHTML=badge(false); $cvValue.value=""; $itemInfo.textContent="";
-      $btnSave.disabled = !WRITE_URL;
+  function highlightRow(fieldKey){
+    // left side
+    [...$listBody.querySelectorAll("tr")].forEach(tr=>{
+      if (tr.children[1] && tr.children[1].textContent.trim() === fieldKey.trim()) tr.classList.add("sel");
+      else tr.classList.remove("sel");
+    });
+    // right side
+    [...$editBody.querySelectorAll("tr")].forEach(tr=>{
+      const cell = tr.querySelector("[data-k]");
+      if (cell && cell.dataset.k === fieldKey) tr.classList.add("sel");
+      else tr.classList.remove("sel");
+    });
+  }
+
+  function renderEditor(){
+    $editBody.innerHTML = "";
+    if (filtered.length === 0){
+      $editBody.innerHTML = `<tr><td colspan="3" class="muted" style="padding:14px">No items to edit.</td></tr>`;
       return;
     }
-    const cur = filtered[selIdx];
-    $cvName.textContent = cur.name || "";
-    $cvKey.textContent  = cur.fieldKey || "";
-    const val = edited.has(cur.fieldKey) ? edited.get(cur.fieldKey) : (cur.value ?? "");
-    $cvValue.value = val;
-    $cvHas.innerHTML = badge(String(val).trim() !== "");
-    $itemInfo.textContent = `Item ${selIdx+1} / ${filtered.length}`;
-    $btnSave.disabled = !WRITE_URL;
+    filtered.forEach(row=>{
+      const tr = document.createElement("tr");
+      const initial = edited.has(row.fieldKey) ? edited.get(row.fieldKey).value : (row.value ?? "");
+      tr.innerHTML = `
+        <td>${row.name || ""}</td>
+        <td class="mono" data-k="${row.fieldKey}">${row.fieldKey || ""}</td>
+        <td>
+          <input class="value-input" data-key="${row.fieldKey}" data-id="${row.id||''}" data-name="${row.name||''}"
+                 value="${(initial ?? '').toString().replace(/"/g,'&quot;')}"
+                 placeholder="(empty)" />
+        </td>
+      `;
+      const input = tr.querySelector("input.value-input");
+      input.addEventListener("input", (e)=>{
+        // force single-line (GHL strips newlines)
+        const clean = e.target.value.replace(/\r?\n/g, " ");
+        if (clean !== e.target.value) e.target.value = clean;
+
+        const fv = (clean ?? "").trim();
+        const ov = (row.value ?? "").toString();
+        if (fv !== ov){
+          input.classList.add("changed");
+          edited.set(row.fieldKey, { id: row.id, fieldKey: row.fieldKey, value: clean, name: row.name });
+        }else{
+          input.classList.remove("changed");
+          edited.delete(row.fieldKey);
+        }
+        renderQueue();
+      });
+      $editBody.appendChild(tr);
+    });
   }
 
-  function renderPager() {
+  function renderQueue(){
+    $chips.innerHTML = "";
+    const arr = [...edited.values()];
+    $queueCount.textContent = `${arr.length} change${arr.length===1?"":"s"}`;
+    if (arr.length === 0) return;
+    arr.forEach(u=>{
+      const chip = document.createElement("span");
+      chip.className = "chip";
+      chip.innerHTML = `<span class="mono" title="${u.fieldKey}">${(u.name||u.fieldKey).slice(0,40)}</span>
+                        <span class="x" aria-label="remove" title="Remove">×</span>`;
+      chip.querySelector(".x").addEventListener("click", ()=>{
+        // remove from map and clear visual change
+        edited.delete(u.fieldKey);
+        const inp = document.querySelector(\`input[data-key="\${u.fieldKey}"]\`);
+        if (inp) inp.classList.remove("changed");
+        renderQueue();
+      });
+      $chips.appendChild(chip);
+    });
+  }
+
+  function renderMeta(){
     const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
-    $pageInfo.textContent = `Page ${Math.min(serverPage,totalPages)} of ${totalPages} • ${totalCount} total`;
-    $btnPrevPage.disabled = serverPage <= 1;
-    $btnNextPage.disabled = serverPage >= totalPages;
+    $pager.textContent = `Page ${Math.min(serverPage,totalPages)} of ${totalPages}`;
+    $countInfo.textContent = `Loaded ${filtered.length} / page • ${totalCount} total`;
+    $btnPrev.disabled = serverPage <= 1;
+    $btnNext.disabled = serverPage >= totalPages;
   }
 
-  // ---------- Fetch (server page) ----------
-  async function fetchPage() {
+  async function fetchPage(){
     const locationId = ($loc.value || getQS("locationId","")).trim();
     pageSize = Math.max(1, parseInt($size.value)||10);
     sortKind = $sort.value || "name-asc";
 
-    showSpin(true);
-    setStatus("Loading…");
-    try {
+    showSpin(true); setStatus("Loading…");
+    try{
       const res = await fetch(READ_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
         body: JSON.stringify({ locationId, page: serverPage, pageSize, sort: sortKind })
       });
-      const txt = await res.text();
-      let payload={}; try{ payload = txt ? JSON.parse(txt) : {}; }catch{}
+      const txt = await res.text(); let payload={}; try{ payload = txt?JSON.parse(txt):{} }catch{}
       if (!res.ok) throw new Error(`Read ${res.status}`);
 
-      // Accept any of these shapes produced by your n8n "Sort + Paginate + Shape" node:
-      // { customValuesSubset:[...], totalCount, page, pageSize, sort }
-      // OR an array with the object as [0]
-      let obj = Array.isArray(payload) ? payload[0] : payload;
-      pageItems  = Array.isArray(obj?.customValuesSubset) ? obj.customValuesSubset : (Array.isArray(obj) ? obj : []);
-      totalCount = Number(obj?.totalCount ?? pageItems.length) || 0;
-
-      // reset selection on new page
-      selIdx = 0;
+      const { items, total, page, pageSize:ps, sort } = normalize(payload);
+      totalCount = total; serverPage = page; pageSize = ps; sortKind = sort;
+      pageItems = items.map(r=>({ id:r.id, name:r.name, fieldKey:r.fieldKey, value:r.value ?? "" }));
       applyFilter();
-      renderList();
-      renderDetail();
-      renderPager();
+      renderList(); renderEditor(); renderMeta();
       setStatus(`Loaded ${pageItems.length} item${pageItems.length===1?"":"s"} on this page.`);
-    } catch(e){
+    }catch(e){
       setStatus(e?.message || String(e));
-    } finally {
+    }finally{
       showSpin(false);
     }
   }
 
-  // ---------- Events ----------
-  $("btnPrevPage").addEventListener("click", ()=>{ if (serverPage>1){ serverPage--; fetchPage(); }});
-  $("btnNextPage").addEventListener("click", ()=>{ serverPage++; fetchPage(); });
+  // Events
+  $btnPrev.addEventListener("click", ()=>{ if (serverPage>1){ serverPage--; fetchPage(); }});
+  $btnNext.addEventListener("click", ()=>{ serverPage++; fetchPage(); });
+  $fetch.addEventListener("click", fetchPage);
+  $search.addEventListener("input", ()=>{ applyFilter(); renderList(); renderEditor(); renderMeta(); });
 
-  $fetch.addEventListener("click", ()=>{
-    serverPage = Math.max(1, toInt(qs.get("page"), 1)); // keep current unless query forces it
-    fetchPage();
+  $btnClear.addEventListener("click", ()=>{
+    edited.clear();
+    // remove highlights
+    document.querySelectorAll(".value-input.changed").forEach(el=>el.classList.remove("changed"));
+    renderQueue();
   });
 
-  $search.addEventListener("input", ()=>{ applyFilter(); renderList(); renderDetail(); });
-
-  $cvValue.addEventListener("input", ()=>{
-    if (!filtered.length) return;
-    const cur = filtered[selIdx];
-    edited.set(cur.fieldKey, $cvValue.value);
-    $cvHas.innerHTML = badge(String($cvValue.value).trim() !== "");
-  });
-
-  $btnPrevItem.addEventListener("click", ()=>{
-    if (!filtered.length) return;
-    selIdx = (selIdx - 1 + filtered.length) % filtered.length;
-    renderList(); renderDetail();
-  });
-  $btnNextItem.addEventListener("click", ()=>{
-    if (!filtered.length) return;
-    selIdx = (selIdx + 1) % filtered.length;
-    renderList(); renderDetail();
-  });
-
-  $btnSave.addEventListener("click", async ()=>{
-    if (!WRITE_URL || !filtered.length) return;
-    const cur = filtered[selIdx];
-    const newVal = edited.has(cur.fieldKey) ? edited.get(cur.fieldKey) : (cur.value ?? "");
+  $btnSaveAll.addEventListener("click", async ()=>{
+    if (!WRITE_URL){ $saveMsg.innerHTML = `<span class="muted">Set <code>writeUrl</code> to enable saving.</span>`; return; }
     const locationId = ($loc.value || getQS("locationId","")).trim();
-    $btnSave.disabled = true; $saveMsg.textContent = "Saving…";
+    const updates = [...edited.values()].map(({id, fieldKey, value}) => ({ id, fieldKey, value }));
+    if (updates.length === 0){ $saveMsg.innerHTML = `<span class="muted">No changes to save.</span>`; return; }
+
+    $btnSaveAll.disabled = true; $saveMsg.textContent = "Saving…"; showSpin(true);
     try{
       const res = await fetch(WRITE_URL, {
         method:"POST",
-        headers: { "Content-Type":"application/json" },
-        body: JSON.stringify({ locationId, updates:[{ fieldKey: cur.fieldKey, value:newVal }] })
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({ locationId, updates })
       });
       const t = await res.text(); let p={}; try{ p = t?JSON.parse(t):{} }catch{}
       if (!res.ok) throw new Error(`Write ${res.status}`);
-      // commit
-      cur.value = newVal; edited.delete(cur.fieldKey);
-      renderList(); renderDetail();
-      $saveMsg.innerHTML = '<span class="note">Saved ✔</span>';
+
+      // Optimistically commit local values
+      updates.forEach(u=>{
+        const item = pageItems.find(x=>x.fieldKey===u.fieldKey);
+        if (item) item.value = u.value;
+        const inp = document.querySelector(`input[data-key="${u.fieldKey}"]`);
+        if (inp) inp.classList.remove("changed");
+      });
+      edited.clear();
+      renderQueue(); renderList(); // refresh badges on left
+      $saveMsg.innerHTML = `<span style="color:var(--good)">Saved ${updates.length} update${updates.length===1?"":"s"} ✔</span>`;
     }catch(e){
-      $saveMsg.innerHTML = `<span class="err">${e?.message || e}</span>`;
+      $saveMsg.innerHTML = `<span style="color:var(--bad)">${e?.message || e}</span>`;
     }finally{
-      $btnSave.disabled = false;
+      $btnSaveAll.disabled = false; showSpin(false);
     }
   });
 
-  // ---------- Auto bootstrap ----------
+  // Boot
   (function init(){
     const initLoc = getQS("locationId","");
     if (initLoc) $loc.value = initLoc;
-    // Default: load immediately if locationId was provided in URL
-    if (initLoc) fetchPage(); else setStatus("Ready.");
+    setStatus("Ready.");
+    if (initLoc) fetchPage();
   })();
 </script>
 </body>
