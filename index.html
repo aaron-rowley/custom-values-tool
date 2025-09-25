@@ -6,158 +6,209 @@
 <title>Custom Values — Bulk Editor</title>
 <style>
   :root{
-    --bg:#0f1115; --panel:#17191e; --border:#2b2f36; --txt:#fff; --muted:#a1a1aa;
+    --bg:#0f1115; --panel:#15181e; --panel-2:#11151b; --border:#2a2f36; --txt:#e7e7ea; --muted:#a1a1aa;
     --accent:#ff8a00; --accent-soft:rgba(255,138,0,.12);
     --good:#34d399; --bad:#ef4444;
+    --shadow:0 4px 24px rgba(0,0,0,.35);
   }
   *{box-sizing:border-box}
   html,body{height:100%}
-  body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
-  .app{min-height:100%;display:flex;flex-direction:column}
-  .wrap{width:100%;max-width:1200px;margin:0 auto;padding:20px 16px;flex:1;display:flex;flex-direction:column;gap:12px}
-  h1{margin:0;font-size:22px}
+  body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
+
+  /* App frame */
+  .container{max-width:1100px;margin:0 auto;padding:20px 16px}
+  .hstack{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .spacer{flex:1}
+  h1{margin:0;font-size:22px;letter-spacing:.2px}
   .muted{color:var(--muted)}
-  .card{background:var(--panel);border:1px solid var(--border);border-radius:14px}
+
+  /* Cards */
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow)}
   .pad{padding:14px}
-  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
-  .pill{border:1px solid var(--border);border-radius:999px;padding:6px 10px}
-  .input,.btn,.select{background:#11151b;color:var(--txt);border:1px solid var(--border);border-radius:10px;padding:8px 10px;outline:none;min-height:36px}
+  .bar{display:flex;gap:10px;align-items:center}
+
+  /* Inputs */
+  .input,.select,.btn{
+    background:var(--panel-2);color:var(--txt);
+    border:1px solid var(--border);border-radius:10px;min-height:36px;padding:8px 10px;outline:none
+  }
+  .input, .select{min-width:0}
   .btn{cursor:pointer;font-weight:700}
   .btn.primary{background:var(--accent);color:#111;border-color:#000}
   .btn.ghost{background:transparent}
   .btn:disabled{opacity:.6;cursor:default}
-  .two{display:grid;grid-template-columns:1fr minmax(420px,1.2fr);gap:12px}
-  @media (max-width:980px){ .two{grid-template-columns:1fr} }
-  .left .head{display:flex;align-items:center;gap:8px;padding:10px;border-bottom:1px solid var(--border)}
-  .table-wrap{max-height:60vh;overflow:auto}
+
+  /* Control bar */
+  .controlbar{gap:12px;padding:12px;border-radius:14px;margin-bottom:14px}
+  .pill{border:1px solid var(--border);border-radius:999px;padding:6px 10px}
+  .status{min-width:120px;text-align:center}
+
+  /* Columns */
+  .cols{display:grid;grid-template-columns: 1.1fr .9fr;gap:14px}
+  @media (max-width: 980px){ .cols{grid-template-columns:1fr} }
+
+  /* Tables */
+  .table-wrap{max-height:62vh;overflow:auto;border-radius:12px}
   table{width:100%;border-collapse:separate;border-spacing:0}
+  thead th{
+    position:sticky;top:0;z-index:1;background:linear-gradient(0deg,var(--panel),var(--panel));
+    color:var(--muted);font-weight:600;text-transform:uppercase;font-size:12px;letter-spacing:.3px
+  }
   th,td{padding:10px 12px;border-bottom:1px solid var(--border);text-align:left;vertical-align:middle}
-  thead th{position:sticky;top:0;background:var(--panel);z-index:1}
-  tr:hover{background:#0f141a}
+  tbody tr:hover{background:#10151d}
+  tbody tr:nth-child(even){background:#0d1218}
+  .sel{outline:2px solid rgba(255,138,0,.25);outline-offset:-2px;background:#121820 !important}
   .mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:#d1d5db}
   .badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;border:1px solid transparent}
   .ok{background:rgba(52,211,153,.15);color:#bbf7d0;border-color:rgba(52,211,153,.4)}
   .no{background:rgba(239,68,68,.10);color:#fecaca;border-color:rgba(239,68,68,.4)}
-  .sel{outline:2px solid rgba(255,138,0,.25);outline-offset:-2px}
-  .editor .head{display:flex;align-items:center;gap:8px;padding:10px;border-bottom:1px solid var(--border)}
-  .edit-table{max-height:60vh;overflow:auto}
-  .value-input{width:100%;min-width:200px;background:#0f141a;border:1px solid var(--border);color:var(--txt);border-radius:8px;padding:7px 9px;outline:none}
+
+  .value-input{width:100%;min-width:180px;background:#0f141a;border:1px solid var(--border);color:var(--txt);border-radius:8px;padding:7px 9px;outline:none}
   .value-input.changed{box-shadow:0 0 0 2px rgba(255,138,0,.25) inset;border-color:var(--accent)}
-  .queue .chips{display:flex;flex-wrap:wrap;gap:8px}
+
+  /* Sticky save drawer */
+  .drawer{
+    position:sticky;bottom:14px;z-index:5;
+    background:var(--panel);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);padding:12px
+  }
+  .chips{display:flex;flex-wrap:wrap;gap:8px;max-height:110px;overflow:auto;margin-top:6px}
   .chip{display:inline-flex;gap:8px;align-items:center;background:#11151b;border:1px solid var(--border);border-radius:999px;padding:6px 10px}
   .chip .x{cursor:pointer;font-weight:900;opacity:.8}
-  .queue .bar{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-top:10px}
+
+  /* Overlay spinner */
   .overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;backdrop-filter:blur(2px);z-index:50}
   .spinner{width:68px;height:68px;border-radius:50%;
     background:radial-gradient(circle at 30% 30%, rgba(255,138,0,.85), transparent 55%),
                radial-gradient(circle at 70% 70%, rgba(255,138,0,.35), transparent 45%), #0b0b0b;
     box-shadow:0 0 24px rgba(255,138,0,.35),0 0 60px rgba(255,138,0,.18) inset,0 0 4px rgba(255,138,0,.7) inset;
     animation:spin 1.1s linear infinite,pulse 1.6s ease-in-out infinite;border:2px solid rgba(255,138,0,.35)}
-  @keyframes spin {to{transform:rotate(360deg)}} @keyframes pulse {50%{box-shadow:0 0 36px rgba(255,138,0,.55),0 0 90px rgba(255,138,0,.28) inset,0 0 6px rgba(255,138,0,1) inset}}
+  @keyframes spin {to{transform:rotate(360deg)}}
+  @keyframes pulse {50%{box-shadow:0 0 36px rgba(255,138,0,.55),0 0 90px rgba(255,138,0,.28) inset,0 0 6px rgba(255,138,0,1) inset}}
 </style>
 </head>
 <body>
-<div class="app">
-  <div class="wrap">
-    <div>
-      <h1>Custom Values Viewer</h1>
-      <p class="muted">Full-width widget. Read from n8n; edit on the right; queue changes; send only updates.
-      URL overrides: ?readUrl=...&writeUrl=...&locationId=...&page=1&pageSize=10&sort=name-asc</p>
+<div class="container">
+
+  <!-- Header -->
+  <div class="hstack" style="margin-bottom:6px">
+    <h1>Custom Values Viewer</h1>
+    <div class="spacer"></div>
+    <small class="muted">Read/Write via n8n. Only edited rows are sent.</small>
+  </div>
+
+  <!-- Control bar -->
+  <div class="card controlbar">
+    <div class="bar">
+      <label style="flex:1;min-width:260px">
+        <div class="muted" style="margin-bottom:4px">Location ID</div>
+        <input id="locationId" class="input" placeholder="KH4..." />
+      </label>
+
+      <label>
+        <div class="muted" style="margin-bottom:4px">Page size</div>
+        <select id="pageSize" class="select"><option>10</option><option>20</option><option>50</option></select>
+      </label>
+
+      <label>
+        <div class="muted" style="margin-bottom:4px">Sort</div>
+        <select id="sort" class="select">
+          <option value="name-asc">Name A-Z</option>
+          <option value="name-desc">Name Z-A</option>
+          <option value="key-asc">Key A-Z</option>
+          <option value="key-desc">Key Z-A</option>
+        </select>
+      </label>
+
+      <button id="btnFetch" class="btn primary">Fetch</button>
+      <div id="status" class="pill status">Ready</div>
     </div>
 
-    <div class="card pad">
-      <div class="row">
-        <label style="flex:1">
-          <div class="muted" style="margin-bottom:4px">Location ID</div>
-          <input id="locationId" class="input" placeholder="KH4..." />
-        </label>
-        <label>
-          <div class="muted" style="margin-bottom:4px">Page size</div>
-          <select id="pageSize" class="select"><option>10</option><option>20</option><option>50</option></select>
-        </label>
-        <label>
-          <div class="muted" style="margin-bottom:4px">Sort</div>
-          <select id="sort" class="select">
-            <option value="name-asc">Name A-Z</option>
-            <option value="name-desc">Name Z-A</option>
-            <option value="key-asc">Key A-Z</option>
-            <option value="key-desc">Key Z-A</option>
-          </select>
-        </label>
-        <button id="btnFetch" class="btn primary">Fetch</button>
-        <div id="status" class="pill" style="margin-left:auto">Ready.</div>
+    <div class="bar" style="margin-top:10px">
+      <label style="flex:1;min-width:260px">
+        <div class="muted" style="margin-bottom:4px">Search (Display Name)</div>
+        <input id="search" class="input" placeholder="Start typing to filter..." />
+      </label>
+      <div class="spacer"></div>
+      <button id="btnPrev" class="btn">Prev</button>
+      <button id="btnNext" class="btn">Next</button>
+      <div id="pager" class="pill">—</div>
+    </div>
+  </div>
+
+  <!-- Columns -->
+  <div class="cols">
+    <!-- Left: compact results -->
+    <div class="card">
+      <div class="bar" style="padding:10px;border-bottom:1px solid var(--border)">
+        <strong>Results</strong>
+        <div class="spacer"></div>
+        <span id="countInfo" class="muted"></span>
       </div>
-      <div class="row" style="margin-top:10px">
-        <label style="flex:1">
-          <div class="muted" style="margin-bottom:4px">Search by Display Name</div>
-          <input id="search" class="input" placeholder="Type to filter..." />
-        </label>
-        <div class="row" style="margin-left:auto">
-          <button id="btnPrev" class="btn">Prev page</button>
-          <button id="btnNext" class="btn">Next page</button>
-          <div id="pager" class="pill">-</div>
-        </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th style="width:50%">Field Key</th><th style="width:20%">Has Value?</th><th style="width:30%">Display Name</th></tr>
+          </thead>
+          <tbody id="listBody">
+            <tr><td colspan="3" class="muted" style="padding:14px">No data. Click <b>Fetch</b>.</td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
-    <div class="two">
-      <div class="card left">
-        <div class="head">
-          <strong>Results</strong>
-          <span id="countInfo" class="muted" style="margin-left:auto"></span>
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead><tr class="muted"><th style="width:42%">Display Name</th><th style="width:40%">Field Key</th><th style="width:18%">Has Value?</th></tr></thead>
-            <tbody id="listBody"><tr><td colspan="3" class="muted" style="padding:14px">No data. Click Fetch.</td></tr></tbody>
-          </table>
-        </div>
+    <!-- Right: editable page items -->
+    <div class="card">
+      <div class="bar" style="padding:10px;border-bottom:1px solid var(--border)">
+        <strong>Page items (editable)</strong>
+        <div class="spacer"></div>
+        <span class="muted">Single-line values</span>
       </div>
-
-      <div class="card editor">
-        <div class="head">
-          <strong>Page items (editable)</strong>
-          <span class="muted" style="margin-left:auto">Single-line inputs (newlines replaced)</span>
-        </div>
-        <div class="edit-table">
-          <table>
-            <thead><tr class="muted"><th style="width:34%">Name</th><th style="width:40%">Field Key</th><th style="width:26%">Value</th></tr></thead>
-            <tbody id="editBody"><tr><td colspan="3" class="muted" style="padding:14px">Nothing loaded yet.</td></tr></tbody>
-          </table>
-        </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th style="width:38%">Display Name</th><th style="width:38%">Field Key</th><th style="width:24%">Value</th></tr>
+          </thead>
+          <tbody id="editBody">
+            <tr><td colspan="3" class="muted" style="padding:14px">Nothing loaded yet.</td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
+  </div>
 
-    <div class="card pad queue">
-      <div class="row" style="margin-bottom:8px"><strong>Queued updates</strong><span id="queueCount" class="muted">0 changes</span></div>
-      <div id="chips" class="chips"></div>
-      <div class="bar">
-        <div class="muted">Only changed rows will be sent. Remove any chip to discard that edit.</div>
-        <div class="row"><button id="btnClear" class="btn ghost">Clear</button><button id="btnSaveAll" class="btn primary">Save updates</button></div>
-      </div>
-      <div id="saveMsg" style="margin-top:8px;"></div>
+  <!-- Sticky Save Drawer -->
+  <div class="drawer">
+    <div class="bar">
+      <strong>Queued updates</strong>
+      <span id="queueCount" class="muted">0 changes</span>
+      <div class="spacer"></div>
+      <button id="btnClear" class="btn ghost">Clear</button>
+      <button id="btnSaveAll" class="btn primary">Save updates</button>
     </div>
+    <div id="saveMsg" style="margin-top:8px"></div>
+    <div id="chips" class="chips"></div>
   </div>
 </div>
 
+<!-- Overlay -->
 <div id="overlay" class="overlay" aria-live="polite" aria-busy="true"><div class="spinner" title="Loading"></div></div>
 
 <script>
 "use strict";
 
-/* --------- helpers --------- */
+/* ---------- tiny helpers ---------- */
 var qs = new URLSearchParams(location.search);
 function getQS(k, fb){ var v = qs.get(k); if(v==null) return fb||""; try{ return /%[0-9A-F]{2}/i.test(v)?decodeURIComponent(v):v }catch(e){ return v; } }
 function toInt(v, fb){ var n = parseInt(v,10); return (Number.isFinite(n)&&n>0)?n:(fb||0); }
+function $(id){ return document.getElementById(id); }
 
+/* ---------- endpoints (URL-overridable) ---------- */
 var READ_DEFAULT  = "https://api.visquanta.com/webhook/call-custom-values-data";
 var WRITE_DEFAULT = "";
-
 var READ_URL  = getQS("readUrl", READ_DEFAULT);
 var WRITE_URL = getQS("writeUrl", WRITE_DEFAULT);
 
-function $(id){ return document.getElementById(id); }
-
+/* ---------- dom ---------- */
 var $loc=$("locationId"), $size=$("pageSize"), $sort=$("sort"), $fetch=$("btnFetch");
 var $status=$("status"), $pager=$("pager"), $countInfo=$("countInfo");
 var $btnPrev=$("btnPrev"), $btnNext=$("btnNext"), $search=$("search");
@@ -165,23 +216,21 @@ var $listBody=$("listBody"), $editBody=$("editBody");
 var $chips=$("chips"), $queueCount=$("queueCount"), $btnClear=$("btnClear"), $btnSaveAll=$("btnSaveAll"), $saveMsg=$("saveMsg");
 var $overlay=$("overlay");
 
-/* --------- state --------- */
+/* ---------- state ---------- */
 var serverPage = Math.max(1, toInt(getQS("page"), 1));
-var pageSize   = Math.max(1, toInt(getQS("pageSize"), 10));
+var pageSize   = Math.max(1, toInt(getQS("pageSize"), 20));
 var sortKind   = getQS("sort","name-asc");
-
-$size.value = String(pageSize);
-$sort.value = sortKind;
+$size.value = String(pageSize); $sort.value = sortKind;
 
 var totalCount = 0;
 var pageItems  = [];
 var filtered   = [];
 var edited     = new Map();
-var inFlight   = false; // single in-flight request
+var inFlight   = false;
 
 function showSpin(on){ $overlay.style.display = on ? "flex" : "none"; }
-function badge(ok){ return '<span class="badge '+(ok?'ok':'no')+'">'+(ok?'Yes':'No')+'</span>'; }
 function setStatus(s){ $status.textContent = s; }
+function badge(ok){ return '<span class="badge '+(ok?'ok':'no')+'">'+(ok?'Yes':'No')+'</span>'; }
 
 function sanitizeRows(list){
   return list.map(function(r){
@@ -212,7 +261,10 @@ function renderList(){
   filtered.forEach(function(row){
     var hasVal = !!(row.value && String(row.value).trim());
     var tr = document.createElement("tr");
-    tr.innerHTML = '<td>'+ (row.name||"") +'</td><td class="mono">'+ (row.fieldKey||"") +'</td><td>'+ badge(hasVal) +'</td>';
+    tr.innerHTML =
+      '<td class="mono">'+ (row.fieldKey||"") +'</td>'+
+      '<td>'+ badge(hasVal) +'</td>'+
+      '<td>'+ (row.name||"") +'</td>';
     tr.addEventListener("click", function(){
       var el = document.querySelector('input[data-key="'+ row.fieldKey +'"]');
       if (el){ el.focus({preventScroll:false}); el.scrollIntoView({block:"center"}); }
@@ -224,7 +276,7 @@ function renderList(){
 
 function highlightRow(fieldKey){
   Array.prototype.forEach.call($listBody.querySelectorAll("tr"), function(tr){
-    if (tr.children[1] && tr.children[1].textContent.trim() === fieldKey.trim()) tr.classList.add("sel"); else tr.classList.remove("sel");
+    if (tr.children[0] && tr.children[0].textContent.trim() === fieldKey.trim()) tr.classList.add("sel"); else tr.classList.remove("sel");
   });
   Array.prototype.forEach.call($editBody.querySelectorAll("tr"), function(tr){
     var cell = tr.querySelector("[data-k]");
@@ -264,7 +316,7 @@ function renderQueue(){
   arr.forEach(function(u){
     var chip = document.createElement("span");
     chip.className = "chip";
-    chip.innerHTML = '<span class="mono" title="'+ u.fieldKey +'">'+ (u.name||u.fieldKey).slice(0,40) +'</span><span class="x" title="Remove">x</span>';
+    chip.innerHTML = '<span class="mono" title="'+ u.fieldKey +'">'+ (u.name||u.fieldKey).slice(0,44) +'</span><span class="x" title="Remove">×</span>';
     chip.querySelector(".x").addEventListener("click", function(){
       edited.delete(u.fieldKey);
       var inp = document.querySelector('input[data-key="'+ u.fieldKey +'"]');
@@ -277,38 +329,37 @@ function renderQueue(){
 
 function renderMeta(){
   var totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
-  $pager.textContent = "Page " + Math.min(serverPage,totalPages) + " of " + totalPages;
-  $countInfo.textContent = "Loaded " + filtered.length + " / page • " + totalCount + " total";
+  $pager.textContent = "Page " + Math.min(serverPage,totalPages) + " / " + totalPages;
+  $countInfo.textContent = "Loaded " + filtered.length + " on page • " + totalCount + " total";
   $btnPrev.disabled = serverPage <= 1;
   $btnNext.disabled = serverPage >= totalPages;
 }
 
-/* --------- single in-flight fetch --------- */
+/* ---------- single in-flight fetch ---------- */
 async function fetchPage(){
-  if (inFlight) { return; }
+  if (inFlight) return;
   inFlight = true;
+
   var locationId = ($loc.value || getQS("locationId","")).trim();
-  pageSize = Math.max(1, parseInt($size.value,10)||10);
+  pageSize = Math.max(1, parseInt($size.value,10)||20);
   sortKind = $sort.value || "name-asc";
 
   showSpin(true);
   setStatus("Loading…");
   try{
-    console.log("[CV] POST", READ_URL, {locationId, page:serverPage, pageSize, sort:sortKind});
     var res = await fetch(READ_URL, {
       method:"POST",
       headers:{ "Content-Type":"application/json", "Accept":"application/json" },
       body: JSON.stringify({ locationId, page: serverPage, pageSize, sort: sortKind })
     });
     var txt = await res.text();
-    var payload = {};
-    try{ payload = txt ? JSON.parse(txt) : {}; }catch(e){}
+    var payload = {}; try{ payload = txt ? JSON.parse(txt) : {}; }catch(e){}
     if (!res.ok) throw new Error("Read "+res.status+" "+(res.statusText||""));
     var parsed = parsePayload(payload);
     pageItems  = parsed.items;
     totalCount = parsed.total;
     applyFilter(); renderList(); renderEditor(); renderMeta();
-    setStatus(pageItems.length ? ("Loaded "+pageItems.length+" item"+(pageItems.length===1?"":"s")+" on this page.") : "No items returned for this page.");
+    setStatus(pageItems.length ? ("Loaded "+pageItems.length+" item"+(pageItems.length===1?"":"s")+".") : "No items on this page.");
   }catch(e){
     setStatus(e && e.message ? e.message : String(e));
     console.error("[CV] fetch error", e);
@@ -318,7 +369,7 @@ async function fetchPage(){
   }
 }
 
-/* --------- events --------- */
+/* ---------- events ---------- */
 $btnPrev.addEventListener("click", function(){ if (serverPage>1){ serverPage--; fetchPage(); }});
 $btnNext.addEventListener("click", function(){ serverPage++; fetchPage(); });
 $fetch.addEventListener("click", fetchPage);
@@ -355,13 +406,11 @@ $btnSaveAll.addEventListener("click", async function(){
   }
 });
 
-/* --------- boot --------- */
+/* ---------- boot ---------- */
 (function init(){
   var initLoc = getQS("locationId","");
   if (initLoc) $loc.value = initLoc;
-  setStatus("Ready.");
-  // Optional auto-fetch if locationId present
-  // if (initLoc) fetchPage();
+  setStatus("Ready");
 })();
 </script>
 </body>
