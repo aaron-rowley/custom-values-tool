@@ -396,50 +396,72 @@
   }
 
   // ---------- Single in-flight fetch ----------
-  async function fetchPage() {
-    const locationId = ($loc.value || getQS("locationId","")).trim();
-    pageSize = Math.max(1, parseInt($size.value)||10);
-    sortKind = $sort.value || "name-asc";
+  let inFlight = false;
 
-    showSpin(true);                 // turn spinner on BEFORE any await
-    setStatus("Loading…");
-    try {
-      const res = await fetch(READ_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json"
-        },
-        body: JSON.stringify({ locationId, page: serverPage, pageSize, sort: sortKind })
-      });
-
-      const txt = await res.text();
-      let payload = {};
-      try { payload = txt ? JSON.parse(txt) : {}; } catch {}
-
-      if (!res.ok) throw new Error(`Read ${res.status}${res.statusText ? " " + res.statusText : ""}`);
-
-      const { items, total } = parsePayload(payload);
-      pageItems  = items;
-      totalCount = total;
-
-      applyFilter();
-      renderList();
-      renderEditor();
-      renderMeta();
-
-      setStatus(
-        items.length
-          ? `Loaded ${items.length} item${items.length===1?"":"s"} on this page.`
-          : "No items returned for this page."
-      );
-    } catch (e) {
-      setStatus(e?.message || String(e));
-      console.debug("[CV Widget] fetch error / raw:", e);
-    } finally {
-      showSpin(false);              // ALWAYS turns spinner off
-    }
+async function fetchPage() {
+  if (inFlight) {
+    console.debug("[CV] fetch ignored (already in flight)");
+    return;
   }
+  inFlight = true;
+
+  const locationId = ($loc.value || getQS("locationId","")).trim();
+  pageSize = Math.max(1, parseInt($size.value)||10);
+  sortKind = $sort.value || "name-asc";
+
+  const payload = { locationId, page: serverPage, pageSize, sort: sortKind };
+  console.log("[CV] → POST", READ_URL, payload, "origin:", location.origin);
+
+  showSpin(true);
+  setStatus("Loading…");
+
+  try {
+    const res = await fetch(READ_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const txt = await res.text();
+    console.log("[CV] ← status", res.status, res.statusText, "body:", txt);
+
+    if (!res.ok) {
+      throw new Error(`Read ${res.status} ${res.statusText || ""}`);
+    }
+
+    let data = {};
+    try {
+      data = txt ? JSON.parse(txt) : {};
+    } catch (parseErr) {
+      console.warn("[CV] JSON parse failed:", parseErr);
+    }
+
+    const { items, total } = parsePayload(data);
+    pageItems = items;
+    totalCount = total;
+
+    applyFilter();
+    renderList();
+    renderEditor();
+    renderMeta();
+
+    setStatus(
+      items.length
+        ? `Loaded ${items.length} item${items.length===1?"":"s"} on this page.`
+        : "No items returned for this page."
+    );
+  } catch (err) {
+    console.error("[CV] fetch error:", err);
+    setStatus(err?.message || String(err));
+  } finally {
+    showSpin(false);
+    inFlight = false;
+  }
+}
+
 
   // Events
   $btnPrev.addEventListener("click", ()=>{ if (serverPage>1){ serverPage--; fetchPage(); }});
