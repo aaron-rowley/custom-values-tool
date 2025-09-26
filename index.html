@@ -302,7 +302,8 @@ $btnClear.addEventListener('click', function(){
 });
 $btnSave.addEventListener('click', saveAll);
 $search.addEventListener('input', function(){ applyFilter(); renderTable(); });
-
+$btnLoadMore.addEventListener('click', function(){ serverPage++; fetchPage(true); });
+  
 // Keyboard shortcuts
 window.addEventListener('keydown', function(e){
   var k = e.key.toLowerCase();
