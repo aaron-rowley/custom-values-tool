@@ -55,8 +55,6 @@
     .right{margin-left:auto;display:flex;gap:10px;align-items:center}
 
     .info-btn{background:transparent;border:1px solid var(--border);color:var(--txt);border-radius:999px;min-height:28px;padding:3px 9px;cursor:pointer}
-    .popover{position:absolute;background:#0d1218;border:1px solid var(--border);border-radius:10px;padding:10px 12px;box-shadow:var(--shadow);width:320px;display:none}
-    .popover .row{justify-content:flex-start}
     .copy{cursor:pointer;border:1px solid var(--border);border-radius:6px;padding:3px 7px}
 
     .overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;backdrop-filter:blur(2px);z-index:50}
@@ -76,7 +74,9 @@
   <!-- APP BAR -->
   <div class="appbar" id="appbar" style="display:none">
     <div class="title">Custom Values Viewer</div>
+
     <button id="btnRefresh" class="btn">Refresh</button>
+
     <label style="margin-left:10px">Show
       <select id="pageSizeSelect" class="select">
         <option value="10">10</option>
@@ -86,16 +86,19 @@
       </select>
     </label>
 
-    <!-- Paging controls -->
     <div class="spacer"></div>
+
+    <!-- Paging controls -->
     <button id="btnPrev" class="btn" disabled>Prev</button>
-    <button id="btnNext" class="btn" disabled>Next</button>
-    <label class="muted" style="display:flex;gap:6px;align-items:center;margin-left:8px">
+
+    <label class="muted" style="display:flex;gap:6px;align-items:center">
       Page
-      <input id="pageJump" class="input" inputmode="numeric" pattern="[0-9]*" style="width:80px" placeholder="#" />
-      <button id="btnGo" class="btn">Go</button>
+      <select id="pageSelect" class="select" style="width:92px"></select>
+      of <span id="totalPagesLabel">—</span>
     </label>
-    <small class="muted" id="pageInfo" style="margin-left:8px">Page —</small>
+
+    <button id="btnNext" class="btn" disabled>Next</button>
+
     <small class="muted" id="countInfo" style="margin-left:10px">—</small>
   </div>
 
@@ -129,7 +132,7 @@
           <tr>
             <th style="width:42%">Display Name</th>
             <th style="width:46%">Value</th>
-            <th style="width:12%">Info</th>
+            <th style="width:12%">Actions</th>
           </tr>
         </thead>
         <tbody id="tbody">
@@ -180,7 +183,7 @@ var $intro=$("intro"), $main=$("main"), $appbar=$("appbar"),
     $btnSave=$("btnSave"), $countInfo=$("countInfo"), $search=$("search"),
     $btnRefresh=$("btnRefresh"), $pageSizeSelect=$("pageSizeSelect"),
     $tableWrap=$("tableWrap"), $btnPrev=$("btnPrev"), $btnNext=$("btnNext"),
-    $pageInfo=$("pageInfo"), $pageJump=$("pageJump"), $btnGo=$("btnGo");
+    $pageSelect=$("pageSelect"), $totalPagesLabel=$("totalPagesLabel");
 
 // ======== state ========
 var serverPage = 1;
@@ -201,7 +204,8 @@ if (getQS("locationId")) $loc.value = getQS("locationId");
 function parsePayload(payload){
   var obj = payload;
   if (Array.isArray(obj)){
-    if (obj[0] && obj[0].json && typeof obj[0].json === "object") obj = obj[0].json; else return { items: sanitizeRows(obj), total: obj.length, page: serverPage, pageSize, totalPages: Math.max(1, Math.ceil(obj.length/Math.max(1,pageSize))) };
+    if (obj[0] && obj[0].json && typeof obj[0].json === "object") obj = obj[0].json;
+    else return { items: sanitizeRows(obj), total: obj.length, page: serverPage, pageSize, totalPages: Math.max(1, Math.ceil(obj.length/Math.max(1,pageSize))) };
   }
   if (obj && obj.json && typeof obj.json === "object") obj = obj.json;
 
@@ -253,13 +257,13 @@ async function fetchPage(){
     // update UI
     applyFilter(); renderTable();
     $countInfo.textContent = totalCount + " total";
-    $pageInfo.textContent  = "Page " + serverPage + " of " + totalPages;
+
+    // build/select page dropdown
+    buildPageSelect(totalPages, serverPage);
+
+    // enable/disable prev/next
     $btnPrev.disabled = !parsed.hasPrev;
     $btnNext.disabled = !parsed.hasNext;
-    $btnPrev.dataset.next = parsed.prevPage == null ? "" : String(parsed.prevPage);
-    $btnNext.dataset.next = parsed.nextPage == null ? "" : String(parsed.nextPage);
-    $pageJump.value = String(serverPage);
-    $pageJump.min = "1"; $pageJump.max = String(totalPages);
 
     show($intro,false); show($appbar,true); show($main,true);
     requestAnimationFrame(function(){ $tableWrap.scrollTop = preserveScroll; });
@@ -267,11 +271,26 @@ async function fetchPage(){
   finally{ showSpin(false); inFlight=false; }
 }
 
+function buildPageSelect(tPages, cur){
+  // only rebuild if count changed or first time
+  if ($pageSelect.options.length !== tPages){
+    $pageSelect.innerHTML = "";
+    for (var i=1;i<=tPages;i++){
+      var opt = document.createElement("option");
+      opt.value = String(i);
+      opt.textContent = String(i);
+      $pageSelect.appendChild(opt);
+    }
+  }
+  $pageSelect.value = String(cur);
+  $totalPagesLabel.textContent = String(tPages);
+}
+
 // ======== render ========
 function applyFilter(){
-  // If we’re doing global (server-side) search, we don’t also client-filter.
+  // For global (server-side) search, don't filter again client-side.
   if (globalSearchTerm && globalSearchTerm.trim().length > 0){ filtered = pageItems.slice(); return; }
-  var q = ($search.value||"").trim().toLowerCase();
+  var q = ""; // local filter disabled by default to avoid confusion
   filtered = !q ? pageItems : pageItems.filter(function(r){
     return (r.name||"").toLowerCase().indexOf(q) !== -1;
   });
@@ -285,7 +304,10 @@ function renderTable(){
     tr.innerHTML =
       '<td>'+ (row.name||"") +'</td>'+
       '<td><input class="value-input'+(edited.has(row.fieldKey)?' changed':'')+'" data-key="'+ (row.fieldKey||"") +'" data-id="'+ (row.id||"") +'" value="'+ String(initial).replace(/"/g,'&quot;') +'" placeholder="(empty)" /></td>'+
-      '<td style="position:relative">\n        <button class="info-btn" data-pop="pop-'+(row.fieldKey||"").replace(/[^\w-]+/g,'_')+'">ℹ️</button>\n        <div class="popover" id="pop-'+(row.fieldKey||"").replace(/[^\w-]+/g,'_')+'">\n          <div class="row">\n            <span class="mono">Field Key:</span>\n            <span class="copy" data-copy="'+ (row.fieldKey||"") +'">Copy</span>\n          </div>\n          <div class="mono" style="margin:4px 0 10px 0">'+ (row.fieldKey||"(none)") +'</div>\n          <div class="row">\n            <span class="mono">Row ID:</span>\n            <span class="copy" data-copy="'+ (row.id||"") +'">Copy</span>\n          </div>\n          <div class="mono">'+ (row.id||"(none)") +'</div>\n        </div>\n      </td>';
+      '<td><div class="row" style="justify-content:flex-start;gap:6px">'+
+        '<button class="info-btn copy" data-copy="'+ (row.fieldKey||"") +'" data-copy-label="Field key copied">Copy Key</button>'+
+        '<button class="info-btn copy" data-copy="'+ (row.id||"") +'" data-copy-label="Row ID copied">Copy ID</button>'+
+      '</div></td>';
 
     var input = tr.querySelector("input.value-input");
     input.addEventListener("input", function(e){
@@ -294,20 +316,6 @@ function renderTable(){
       if (fv !== ov){ input.classList.add("changed"); edited.set(row.fieldKey, { id: row.id, fieldKey: row.fieldKey, value: clean, name: row.name }); }
       else { input.classList.remove("changed"); edited.delete(row.fieldKey); }
       renderQueue();
-    });
-
-    var btn = tr.querySelector(".info-btn");
-    var popId = btn.getAttribute("data-pop");
-    var pop = tr.querySelector("#"+popId);
-    btn.addEventListener("click", function(ev){ ev.stopPropagation();
-      document.querySelectorAll('.popover').forEach(function(p){ if(p!==pop) p.style.display='none'; });
-      pop.style.display = (pop.style.display==='block')?'none':'block';
-    });
-    pop.addEventListener('click', function(ev){ ev.stopPropagation(); });
-    document.addEventListener('click', function(){ pop.style.display='none'; });
-
-    tr.querySelectorAll('[data-copy]').forEach(function(cp){
-      cp.addEventListener('click', function(){ navigator.clipboard.writeText(cp.getAttribute('data-copy')||''); cp.textContent='Copied!'; setTimeout(function(){ cp.textContent='Copy'; },900); });
     });
 
     $tbody.appendChild(tr);
@@ -328,9 +336,43 @@ function renderQueue(){
   });
 }
 
-// ======== save ========
-async function saveAll(){
-  var updates = Array.from(edited.values()).map(function(u){ return { id:u.id, fieldKey:u.fieldKey, value:u.value }; });
+// ======== events ========
+
+// Delegated copy handling (robust)
+$tbody.addEventListener('click', function(e){
+  var t = e.target.closest('[data-copy]');
+  if (!t) return;
+  var val = t.getAttribute('data-copy') || '';
+  var label = t.getAttribute('data-copy-label') || 'Copied';
+  (async function(){
+    try{
+      await navigator.clipboard.writeText(val);
+      var old = t.textContent; t.textContent = '✓ ' + label; t.disabled = true;
+      setTimeout(function(){ t.textContent = old; t.disabled = false; }, 900);
+    }catch(_){
+      var ta = document.createElement('textarea');
+      ta.value = val; ta.style.position='fixed'; ta.style.left='-9999px';
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); } finally { document.body.removeChild(ta); }
+      var old2 = t.textContent; t.textContent = '✓ ' + label; t.disabled = true;
+      setTimeout(function(){ t.textContent = old2; t.disabled = false; }, 900);
+    }
+  })();
+});
+
+$btnPull.addEventListener('click', function(){ serverPage=1; fetchPage(); });
+$btnRefresh.addEventListener('click', fetchPage);
+$pageSizeSelect.addEventListener('change', function(){ pageSize = toInt($pageSizeSelect.value, 50); serverPage = 1; fetchPage(); });
+$btnClear.addEventListener('click', function(){
+  edited.forEach(function(u){ var inp = document.querySelector('input[data-key="'+u.fieldKey+'"]'); var item = pageItems.find(function(x){return x.fieldKey===u.fieldKey}); if(inp){ inp.classList.remove("changed"); inp.value = item && item.value!=null?item.value:''; } });
+  edited.clear(); renderQueue();
+});
+
+// Save
+$btnSave.addEventListener('click', async function saveAll(){
+  var updates = Array.from(edited.values()).map(function(u){
+    return { id:u.id, fieldKey:u.fieldKey, value:u.value, name:u.name };
+  });
   if (!updates.length){ alert('No changes to save.'); return; }
   $btnSave.disabled=true; showSpin(true);
   try{
@@ -345,17 +387,7 @@ async function saveAll(){
     alert('Saved '+updates.length+' update'+(updates.length===1?'':'s')+' ✔');
   }catch(e){ alert(e && e.message ? e.message : String(e)); }
   finally{ $btnSave.disabled=false; showSpin(false); }
-}
-
-// ======== events ========
-$btnPull.addEventListener('click', function(){ serverPage=1; fetchPage(); });
-$btnRefresh.addEventListener('click', fetchPage);
-$pageSizeSelect.addEventListener('change', function(){ pageSize = toInt($pageSizeSelect.value, 50); serverPage = 1; fetchPage(); });
-$btnClear.addEventListener('click', function(){
-  edited.forEach(function(u){ var inp = document.querySelector('input[data-key="'+u.fieldKey+'"]'); var item = pageItems.find(function(x){return x.fieldKey===u.fieldKey}); if(inp){ inp.classList.remove("changed"); inp.value = item && item.value!=null?item.value:''; } });
-  edited.clear(); renderQueue();
 });
-$btnSave.addEventListener('click', saveAll);
 
 // Global (server-side) search with debounce
 $search.addEventListener('input', debounce(function(){
@@ -367,30 +399,27 @@ $search.addEventListener('input', debounce(function(){
 // Paging buttons
 $btnPrev.addEventListener('click', function(){
   if ($btnPrev.disabled) return;
-  var np = toInt($btnPrev.dataset.next, serverPage-1) || (serverPage-1);
-  serverPage = Math.max(1, np);
+  serverPage = Math.max(1, serverPage - 1);
+  $pageSelect.value = String(serverPage);
   fetchPage();
 });
 $btnNext.addEventListener('click', function(){
   if ($btnNext.disabled) return;
-  var np = toInt($btnNext.dataset.next, serverPage+1) || (serverPage+1);
-  serverPage = Math.min(totalPages, np);
+  serverPage = Math.min(totalPages, serverPage + 1);
+  $pageSelect.value = String(serverPage);
   fetchPage();
 });
 
-// Jump-to-page
-$btnGo.addEventListener('click', function(){
-  var np = Math.min(Math.max(1, toInt($pageJump.value, serverPage)), totalPages);
+// Page dropdown
+$pageSelect.addEventListener('change', function(){
+  var np = Math.min(Math.max(1, toInt($pageSelect.value, serverPage)), totalPages);
   if (np !== serverPage){ serverPage = np; fetchPage(); }
-});
-$pageJump.addEventListener('keydown', function(e){
-  if (e.key === 'Enter'){ e.preventDefault(); $btnGo.click(); }
 });
 
 // Keyboard shortcuts
 window.addEventListener('keydown', function(e){
   var k = e.key.toLowerCase();
-  if ((e.metaKey || e.ctrlKey) && k==='s'){ e.preventDefault(); saveAll(); }
+  if ((e.metaKey || e.ctrlKey) && k==='s'){ e.preventDefault(); document.activeElement.blur(); $btnSave.click(); }
   if ((e.metaKey || e.ctrlKey) && k==='r'){ e.preventDefault(); fetchPage(); }
 });
 </script>
