@@ -1,3 +1,4 @@
+<!-- BEGIN: Custom Values Viewer -->
 <!doctype html>
 <html lang="en">
 <head>
@@ -84,8 +85,13 @@
         <option value="100">100</option>
       </select>
     </label>
+
+    <!-- Paging controls -->
     <div class="spacer"></div>
-    <small class="muted" id="countInfo">—</small>
+    <button id="btnPrev" class="btn" disabled>Prev</button>
+    <button id="btnNext" class="btn" disabled>Next</button>
+    <small class="muted" id="pageInfo" style="margin-left:8px">Page —</small>
+    <small class="muted" id="countInfo" style="margin-left:10px">—</small>
   </div>
 
   <!-- INTRO SCREEN -->
@@ -162,10 +168,17 @@ var WRITE_URL = getQS("writeUrl", WRITE_DEFAULT);
 var AUTH_TOKEN = getQS("authToken", "");
 
 // ======== dom ========
-var $intro=$("intro"), $main=$("main"), $appbar=$("appbar"), $btnPull=$("btnPull"), $loc=$("locationId"), $tbody=$("tbody"), $chips=$("chips"), $queueCount=$("queueCount"), $btnClear=$("btnClear"), $btnSave=$("btnSave"), $countInfo=$("countInfo"), $search=$("search"), $btnRefresh=$("btnRefresh"), $pageSizeSelect=$("pageSizeSelect"), $tableWrap=$("tableWrap");
+var $intro=$("intro"), $main=$("main"), $appbar=$("appbar"),
+    $btnPull=$("btnPull"), $loc=$("locationId"), $tbody=$("tbody"),
+    $chips=$("chips"), $queueCount=$("queueCount"), $btnClear=$("btnClear"),
+    $btnSave=$("btnSave"), $countInfo=$("countInfo"), $search=$("search"),
+    $btnRefresh=$("btnRefresh"), $pageSizeSelect=$("pageSizeSelect"),
+    $tableWrap=$("tableWrap"), $btnPrev=$("btnPrev"), $btnNext=$("btnNext"),
+    $pageInfo=$("pageInfo");
 
 // ======== state ========
 var serverPage = 1;
+var totalPages = 1;
 var pageSize   = Math.max(1, toInt(getQS("pageSize"), 50));
 $pageSizeSelect.value = String(pageSize);
 var sortKind   = getQS("sort","name-asc");
@@ -184,10 +197,29 @@ function parsePayload(payload){
     if (obj[0] && obj[0].json && typeof obj[0].json === "object") obj = obj[0].json; else return { items: sanitizeRows(obj), total: obj.length };
   }
   if (obj && obj.json && typeof obj.json === "object") obj = obj.json;
+
   var subset = (obj && Array.isArray(obj.customValuesSubset) && obj.customValuesSubset) ||
                (obj && Array.isArray(obj.customValues) && obj.customValues) ||
                (obj && Array.isArray(obj.data) && obj.data) || [];
-  return { items: sanitizeRows(subset), total: Number((obj && obj.totalCount)!=null?obj.totalCount:subset.length) || 0 };
+
+  // meta with sane fallbacks
+  var page     = Number(obj && obj.page) || serverPage || 1;
+  var pSize    = Number(obj && obj.pageSize) || pageSize || 50;
+  var total    = Number((obj && obj.totalCount)!=null ? obj.totalCount : subset.length) || 0;
+  var tPages   = Number(obj && obj.totalPages) || Math.max(1, Math.ceil(total / Math.max(1,pSize)));
+  var hasPrev  = (obj && typeof obj.hasPrev === "boolean") ? obj.hasPrev : (page > 1);
+  var hasNext  = (obj && typeof obj.hasNext === "boolean") ? obj.hasNext : (page < tPages);
+  var prevPage = (obj && obj.prevPage!=null) ? obj.prevPage : (hasPrev ? page - 1 : null);
+  var nextPage = (obj && obj.nextPage!=null) ? obj.nextPage : (hasNext ? page + 1 : null);
+
+  return {
+    items: sanitizeRows(subset),
+    total,
+    page,
+    pageSize: pSize,
+    totalPages: tPages,
+    hasPrev, hasNext, prevPage, nextPage
+  };
 }
 function sanitizeRows(list){
   return list.map(function(r){ return { name: r && r.name || "", fieldKey: r && r.fieldKey || "", value: (r && (r.value!=null?r.value:null)), id: r && r.id || null }; });
@@ -205,10 +237,24 @@ async function fetchPage(){
     if (!res.ok) throw new Error("Read "+res.status+" "+(res.statusText||""));
     var txt = await res.text(); var payload={}; try{ payload = txt?JSON.parse(txt):{} }catch(e){}
     var parsed = parsePayload(payload);
-    pageItems  = parsed.items; totalCount = parsed.total; applyFilter(); renderTable();
-    $countInfo.textContent = "Loaded "+filtered.length+" on page • "+totalCount+" total";
+
+    // state from server (with fallbacks in parsePayload)
+    pageItems  = parsed.items;
+    totalCount = parsed.total;
+    serverPage = parsed.page;
+    pageSize   = parsed.pageSize;
+    totalPages = parsed.totalPages;
+
+    // update UI
+    applyFilter(); renderTable();
+    $countInfo.textContent = totalCount + " total";
+    $pageInfo.textContent  = "Page " + serverPage + " of " + totalPages;
+    $btnPrev.disabled = !parsed.hasPrev;
+    $btnNext.disabled = !parsed.hasNext;
+    $btnPrev.dataset.next = parsed.prevPage == null ? "" : String(parsed.prevPage);
+    $btnNext.dataset.next = parsed.nextPage == null ? "" : String(parsed.nextPage);
+
     show($intro,false); show($appbar,true); show($main,true);
-    // restore scroll position
     requestAnimationFrame(function(){ $tableWrap.scrollTop = preserveScroll; });
   }catch(e){ alert(e && e.message ? e.message : String(e)); }
   finally{ showSpin(false); inFlight=false; }
@@ -283,7 +329,6 @@ async function saveAll(){
     var explicitOk = (p && (p.ok===true || p.success===true || p.status==='ok' || Array.isArray(p.updated)));
     if (!explicitOk && (!t || t.trim()==='')) throw new Error('No success response body from server.');
 
-    // merge successful values locally
     updates.forEach(function(u){ var item = pageItems.find(function(x){ return x.fieldKey===u.fieldKey; }); if (item) item.value = u.value; var inp = document.querySelector('input[data-key="'+ u.fieldKey +'"]'); if (inp) inp.classList.remove('changed'); });
     edited.clear(); renderQueue();
     alert('Saved '+updates.length+' update'+(updates.length===1?'':'s')+' ✔');
@@ -294,16 +339,28 @@ async function saveAll(){
 // ======== events ========
 $btnPull.addEventListener('click', fetchPage);
 $btnRefresh.addEventListener('click', fetchPage);
-$pageSizeSelect.addEventListener('change', function(){ pageSize = toInt($pageSizeSelect.value, 50); fetchPage(); });
+$pageSizeSelect.addEventListener('change', function(){ pageSize = toInt($pageSizeSelect.value, 50); serverPage = 1; fetchPage(); });
 $btnClear.addEventListener('click', function(){
-  // revert fields and clear edits
-  edited.forEach(function(u){ var inp = document.querySelector('input[data-key="'+u.fieldKey+'"]'); var item = pageItems.find(function(x){return x.fieldKey===u.fieldKey}); if(inp){ inp.classList.remove('changed'); inp.value = item && item.value!=null?item.value:''; } });
+  edited.forEach(function(u){ var inp = document.querySelector('input[data-key="'+u.fieldKey+'"]'); var item = pageItems.find(function(x){return x.fieldKey===u.fieldKey}); if(inp){ inp.classList.remove("changed"); inp.value = item && item.value!=null?item.value:''; } });
   edited.clear(); renderQueue();
 });
 $btnSave.addEventListener('click', saveAll);
 $search.addEventListener('input', function(){ applyFilter(); renderTable(); });
-$btnLoadMore.addEventListener('click', function(){ serverPage++; fetchPage(true); });
-  
+
+// Paging buttons
+$btnPrev.addEventListener('click', function(){
+  if ($btnPrev.disabled) return;
+  var np = toInt($btnPrev.dataset.next, serverPage-1) || (serverPage-1);
+  serverPage = Math.max(1, np);
+  fetchPage();
+});
+$btnNext.addEventListener('click', function(){
+  if ($btnNext.disabled) return;
+  var np = toInt($btnNext.dataset.next, serverPage+1) || (serverPage+1);
+  serverPage = Math.min(totalPages, np);
+  fetchPage();
+});
+
 // Keyboard shortcuts
 window.addEventListener('keydown', function(e){
   var k = e.key.toLowerCase();
@@ -313,3 +370,4 @@ window.addEventListener('keydown', function(e){
 </script>
 </body>
 </html>
+<!-- END: Custom Values Viewer -->
