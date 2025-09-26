@@ -90,6 +90,11 @@
     <div class="spacer"></div>
     <button id="btnPrev" class="btn" disabled>Prev</button>
     <button id="btnNext" class="btn" disabled>Next</button>
+    <label class="muted" style="display:flex;gap:6px;align-items:center;margin-left:8px">
+      Page
+      <input id="pageJump" class="input" inputmode="numeric" pattern="[0-9]*" style="width:80px" placeholder="#" />
+      <button id="btnGo" class="btn">Go</button>
+    </label>
     <small class="muted" id="pageInfo" style="margin-left:8px">Page —</small>
     <small class="muted" id="countInfo" style="margin-left:10px">—</small>
   </div>
@@ -116,7 +121,7 @@
     <div style="padding:10px;border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:center">
       <strong>Custom Values</strong>
       <div class="spacer"></div>
-      <input id="search" class="input" placeholder="Search by display name…" style="min-width:260px;width:320px" />
+      <input id="search" class="input" placeholder="Search all pages by display name or key…" style="min-width:260px;width:360px" />
     </div>
     <div class="table-wrap" id="tableWrap">
       <table>
@@ -159,6 +164,7 @@ function $(id){ return document.getElementById(id); }
 function show(el,on){ el.style.display = on?"":"none"; }
 function showSpin(on){ $("overlay").style.display = on?"flex":"none"; }
 function toInt(v, fb){ var n = parseInt(v,10); return (Number.isFinite(n)&&n>0)?n:(fb||0); }
+function debounce(fn,ms){ var t; return function(){ clearTimeout(t); var a=arguments, self=this; t=setTimeout(function(){ fn.apply(self,a); },ms); }; }
 
 // ======== endpoints (URL-overridable) ========
 var READ_DEFAULT  = "https://api.visquanta.com/webhook/call-custom-values-data";
@@ -174,7 +180,7 @@ var $intro=$("intro"), $main=$("main"), $appbar=$("appbar"),
     $btnSave=$("btnSave"), $countInfo=$("countInfo"), $search=$("search"),
     $btnRefresh=$("btnRefresh"), $pageSizeSelect=$("pageSizeSelect"),
     $tableWrap=$("tableWrap"), $btnPrev=$("btnPrev"), $btnNext=$("btnNext"),
-    $pageInfo=$("pageInfo");
+    $pageInfo=$("pageInfo"), $pageJump=$("pageJump"), $btnGo=$("btnGo");
 
 // ======== state ========
 var serverPage = 1;
@@ -187,6 +193,7 @@ var pageItems  = [];
 var filtered   = [];
 var edited     = new Map();
 var inFlight   = false;
+var globalSearchTerm = "";
 
 if (getQS("locationId")) $loc.value = getQS("locationId");
 
@@ -194,7 +201,7 @@ if (getQS("locationId")) $loc.value = getQS("locationId");
 function parsePayload(payload){
   var obj = payload;
   if (Array.isArray(obj)){
-    if (obj[0] && obj[0].json && typeof obj[0].json === "object") obj = obj[0].json; else return { items: sanitizeRows(obj), total: obj.length };
+    if (obj[0] && obj[0].json && typeof obj[0].json === "object") obj = obj[0].json; else return { items: sanitizeRows(obj), total: obj.length, page: serverPage, pageSize, totalPages: Math.max(1, Math.ceil(obj.length/Math.max(1,pageSize))) };
   }
   if (obj && obj.json && typeof obj.json === "object") obj = obj.json;
 
@@ -202,7 +209,6 @@ function parsePayload(payload){
                (obj && Array.isArray(obj.customValues) && obj.customValues) ||
                (obj && Array.isArray(obj.data) && obj.data) || [];
 
-  // meta with sane fallbacks
   var page     = Number(obj && obj.page) || serverPage || 1;
   var pSize    = Number(obj && obj.pageSize) || pageSize || 50;
   var total    = Number((obj && obj.totalCount)!=null ? obj.totalCount : subset.length) || 0;
@@ -232,13 +238,12 @@ async function fetchPage(){
     var res = await fetch(READ_URL, {
       method:"POST",
       headers:{ "Content-Type":"application/json", "Accept":"application/json", ...(AUTH_TOKEN?{Authorization:AUTH_TOKEN}:{}) },
-      body: JSON.stringify({ locationId: ($loc.value||"").trim(), page: serverPage, pageSize, sort: sortKind })
+      body: JSON.stringify({ locationId: ($loc.value||"").trim(), page: serverPage, pageSize, sort: sortKind, search: globalSearchTerm })
     });
     if (!res.ok) throw new Error("Read "+res.status+" "+(res.statusText||""));
     var txt = await res.text(); var payload={}; try{ payload = txt?JSON.parse(txt):{} }catch(e){}
     var parsed = parsePayload(payload);
 
-    // state from server (with fallbacks in parsePayload)
     pageItems  = parsed.items;
     totalCount = parsed.total;
     serverPage = parsed.page;
@@ -253,6 +258,8 @@ async function fetchPage(){
     $btnNext.disabled = !parsed.hasNext;
     $btnPrev.dataset.next = parsed.prevPage == null ? "" : String(parsed.prevPage);
     $btnNext.dataset.next = parsed.nextPage == null ? "" : String(parsed.nextPage);
+    $pageJump.value = String(serverPage);
+    $pageJump.min = "1"; $pageJump.max = String(totalPages);
 
     show($intro,false); show($appbar,true); show($main,true);
     requestAnimationFrame(function(){ $tableWrap.scrollTop = preserveScroll; });
@@ -262,8 +269,12 @@ async function fetchPage(){
 
 // ======== render ========
 function applyFilter(){
+  // If we’re doing global (server-side) search, we don’t also client-filter.
+  if (globalSearchTerm && globalSearchTerm.trim().length > 0){ filtered = pageItems.slice(); return; }
   var q = ($search.value||"").trim().toLowerCase();
-  filtered = !q ? pageItems : pageItems.filter(function(r){ return (r.name||"").toLowerCase().indexOf(q) !== -1; });
+  filtered = !q ? pageItems : pageItems.filter(function(r){
+    return (r.name||"").toLowerCase().indexOf(q) !== -1;
+  });
 }
 function renderTable(){
   $tbody.innerHTML = "";
@@ -312,7 +323,7 @@ function renderQueue(){
     var chip = document.createElement("span");
     chip.className = "chip";
     chip.innerHTML = '<span class="mono" title="'+ u.fieldKey +'">'+ (u.name||u.fieldKey).slice(0,44) +'</span><span class="x" title="Remove">×</span>';
-    chip.querySelector(".x").addEventListener("click", function(){ edited.delete(u.fieldKey); var inp = document.querySelector('input[data-key="'+ u.fieldKey +'"]'); if (inp){ inp.classList.remove("changed"); var item = pageItems.find(function(x){return x.fieldKey===u.fieldKey}); if(item) inp.value = item.value!=null?item.value:""; } renderQueue(); });
+    chip.querySelector(".x").addEventListener("click", function(){ edited.delete(u.fieldKey); var inp = document.querySelector('input[data-key="'+ u.fieldKey +'"]'); var item = pageItems.find(function(x){return x.fieldKey===u.fieldKey}); if(inp){ inp.classList.remove("changed"); inp.value = item && item.value!=null?item.value:''; } renderQueue(); });
     $chips.appendChild(chip);
   });
 }
@@ -337,7 +348,7 @@ async function saveAll(){
 }
 
 // ======== events ========
-$btnPull.addEventListener('click', fetchPage);
+$btnPull.addEventListener('click', function(){ serverPage=1; fetchPage(); });
 $btnRefresh.addEventListener('click', fetchPage);
 $pageSizeSelect.addEventListener('change', function(){ pageSize = toInt($pageSizeSelect.value, 50); serverPage = 1; fetchPage(); });
 $btnClear.addEventListener('click', function(){
@@ -345,7 +356,13 @@ $btnClear.addEventListener('click', function(){
   edited.clear(); renderQueue();
 });
 $btnSave.addEventListener('click', saveAll);
-$search.addEventListener('input', function(){ applyFilter(); renderTable(); });
+
+// Global (server-side) search with debounce
+$search.addEventListener('input', debounce(function(){
+  globalSearchTerm = ($search.value||"").trim();
+  serverPage = 1;
+  fetchPage();
+}, 300));
 
 // Paging buttons
 $btnPrev.addEventListener('click', function(){
@@ -359,6 +376,15 @@ $btnNext.addEventListener('click', function(){
   var np = toInt($btnNext.dataset.next, serverPage+1) || (serverPage+1);
   serverPage = Math.min(totalPages, np);
   fetchPage();
+});
+
+// Jump-to-page
+$btnGo.addEventListener('click', function(){
+  var np = Math.min(Math.max(1, toInt($pageJump.value, serverPage)), totalPages);
+  if (np !== serverPage){ serverPage = np; fetchPage(); }
+});
+$pageJump.addEventListener('keydown', function(e){
+  if (e.key === 'Enter'){ e.preventDefault(); $btnGo.click(); }
 });
 
 // Keyboard shortcuts
