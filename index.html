@@ -5,9 +5,6 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Custom Values — Pro</title>
   <style>
-    /* =========================
-       THEME / LAYOUT (full-iframe)
-       ========================= */
     :root{
       --bg:#0f1115; --panel:#15181e; --panel-2:#11151b; --border:#2a2f36; --txt:#e7e7ea; --muted:#a1a1aa;
       --accent:#ff8a00; --accent-soft:rgba(255,138,0,.12);
@@ -20,29 +17,26 @@
 
     .container{position:fixed;inset:0;display:flex;flex-direction:column}
 
-    /* App header */
     .appbar{display:flex;gap:10px;align-items:center;padding:14px 16px;background:var(--panel);border-bottom:1px solid var(--border);box-shadow:var(--shadow)}
     .title{font-size:18px;font-weight:700;letter-spacing:.25px}
     .muted{color:var(--muted)}
     .spacer{flex:1}
 
-    /* Intro screen */
     .intro{flex:1;display:flex;align-items:center;justify-content:center}
     .intro-card{background:linear-gradient(180deg,rgba(17,21,27,.75),rgba(14,17,22,.75));border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);padding:28px 24px;max-width:560px;width:92%;text-align:center}
     .intro h1{margin:0 0 8px 0;font-size:22px}
     .intro p{margin:0 0 18px 0;color:var(--muted)}
-    .btn{cursor:pointer;background:var(--panel-2);color:var(--txt);border:1px solid var(--border);border-radius:12px;min-height:44px;padding:10px 16px;font-weight:700}
+    .btn{cursor:pointer;background:var(--panel-2);color:var(--txt);border:1px solid var(--border);border-radius:12px;min-height:38px;padding:8px 14px;font-weight:700}
     .btn.primary{background:var(--accent);color:#111;border-color:#000;box-shadow:0 0 0 0 rgba(255,138,0,.45);transition:transform .05s ease, box-shadow .2s ease}
     .btn.primary:hover{transform:translateY(-1px);box-shadow:0 6px 24px rgba(255,138,0,.25)}
     .btn:disabled{opacity:.6;cursor:default}
 
     .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:center;margin-top:10px}
     .input,.select{background:var(--panel-2);color:var(--txt);border:1px solid var(--border);border-radius:10px;min-height:38px;padding:8px 10px;outline:none}
-    .input{width:100%}
 
-    /* Table */
-    .table-wrap{flex:1;min-height:0;overflow:auto}
-    .card{background:var(--panel);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow)}
+    /* Main area */
+    .card{background:var(--panel);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);display:flex;flex-direction:column;min-height:0}
+    .table-wrap{flex:1;min-height:0;overflow-y:auto}
     table{width:100%;border-collapse:separate;border-spacing:0}
     thead th{position:sticky;top:0;z-index:1;background:linear-gradient(0deg,var(--panel),var(--panel));color:var(--muted);font-weight:600;text-transform:uppercase;font-size:12px;letter-spacing:.3px;border-bottom:1px solid var(--border);padding:10px 12px;text-align:left}
     tbody td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
@@ -50,23 +44,20 @@
     tbody tr:nth-child(even){background:#0d1218}
     .mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:#d1d5db}
 
-    .value-input{width:100%;min-width:200px;background:#0f141a;border:1px solid var(--border);color:var(--txt);border-radius:8px;padding:7px 9px;outline:none}
-    .value-input.changed{box-shadow:0 0 0 2px rgba(255,138,0,.25) inset;border-color:var(--accent)}
+    .value-input{width:100%;min-width:200px;background:#0f141a;border:1px solid var(--border);color:var(--txt);border-radius:8px;padding:7px 9px;outline:none;transition:box-shadow .2s ease,border-color .2s ease}
+    .value-input.changed{box-shadow:0 0 10px 2px rgba(255,138,0,.45),0 0 0 2px rgba(255,138,0,.25) inset;border-color:var(--accent)}
 
-    /* Drawer */
     .drawer{position:sticky;bottom:0;background:var(--panel);border-top:1px solid var(--border);padding:12px 14px;display:flex;gap:10px;align-items:center}
     .chips{display:flex;flex-wrap:wrap;gap:8px;max-height:110px;overflow:auto}
     .chip{display:inline-flex;gap:8px;align-items:center;background:#11151b;border:1px solid var(--border);border-radius:999px;padding:6px 10px}
     .chip .x{cursor:pointer;font-weight:900;opacity:.85}
     .right{margin-left:auto;display:flex;gap:10px;align-items:center}
 
-    /* Info popover */
     .info-btn{background:transparent;border:1px solid var(--border);color:var(--txt);border-radius:999px;min-height:28px;padding:3px 9px;cursor:pointer}
     .popover{position:absolute;background:#0d1218;border:1px solid var(--border);border-radius:10px;padding:10px 12px;box-shadow:var(--shadow);width:320px;display:none}
     .popover .row{justify-content:flex-start}
     .copy{cursor:pointer;border:1px solid var(--border);border-radius:6px;padding:3px 7px}
 
-    /* Overlay spinner */
     .overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;backdrop-filter:blur(2px);z-index:50}
     .spinner{width:86px;height:86px;border-radius:50%;
       background:radial-gradient(circle at 30% 30%, rgba(255,138,0,.85), transparent 55%),
@@ -76,7 +67,6 @@
     @keyframes spin {to{transform:rotate(360deg)}}
     @keyframes pulse {50%{box-shadow:0 0 36px rgba(255,138,0,.55),0 0 90px rgba(255,138,0,.28) inset,0 0 6px rgba(255,138,0,1) inset}}
 
-    /* Utility */
     .hidden{display:none}
   </style>
 </head>
@@ -85,6 +75,15 @@
   <!-- APP BAR -->
   <div class="appbar" id="appbar" style="display:none">
     <div class="title">Custom Values Viewer</div>
+    <button id="btnRefresh" class="btn">Refresh</button>
+    <label style="margin-left:10px">Show
+      <select id="pageSizeSelect" class="select">
+        <option value="10">10</option>
+        <option value="20">20</option>
+        <option value="50" selected>50</option>
+        <option value="100">100</option>
+      </select>
+    </label>
     <div class="spacer"></div>
     <small class="muted" id="countInfo">—</small>
   </div>
@@ -113,7 +112,7 @@
       <div class="spacer"></div>
       <input id="search" class="input" placeholder="Search by display name…" style="min-width:260px;width:320px" />
     </div>
-    <div class="table-wrap">
+    <div class="table-wrap" id="tableWrap">
       <table>
         <thead>
           <tr>
@@ -147,12 +146,7 @@
 <script>
 "use strict";
 
-/* =====================================
-   =======   WHERE TO PASTE — START  =====
-   (Replace your entire file body with this one.)
-   ===================================== */
-
-// --- tiny helpers ---
+// ======== tiny helpers ========
 var qs = new URLSearchParams(location.search);
 function getQS(k, fb){ var v = qs.get(k); if(v==null) return fb||""; try{ return /%[0-9A-F]{2}/i.test(v)?decodeURIComponent(v):v }catch(e){ return v; } }
 function $(id){ return document.getElementById(id); }
@@ -160,19 +154,20 @@ function show(el,on){ el.style.display = on?"":"none"; }
 function showSpin(on){ $("overlay").style.display = on?"flex":"none"; }
 function toInt(v, fb){ var n = parseInt(v,10); return (Number.isFinite(n)&&n>0)?n:(fb||0); }
 
-// --- endpoints (URL-overridable) ---
+// ======== endpoints (URL-overridable) ========
 var READ_DEFAULT  = "https://api.visquanta.com/webhook/call-custom-values-data";
 var WRITE_DEFAULT = "https://api.visquanta.com/webhook/update-custom-values";
 var READ_URL  = getQS("readUrl", READ_DEFAULT);
 var WRITE_URL = getQS("writeUrl", WRITE_DEFAULT);
-var AUTH_TOKEN = getQS("authToken", ""); // preferred: header Authorization
+var AUTH_TOKEN = getQS("authToken", "");
 
-// --- dom ---
-var $intro=$("intro"), $main=$("main"), $appbar=$("appbar"), $btnPull=$("btnPull"), $loc=$("locationId"), $tbody=$("tbody"), $chips=$("chips"), $queueCount=$("queueCount"), $btnClear=$("btnClear"), $btnSave=$("btnSave"), $countInfo=$("countInfo"), $search=$("search");
+// ======== dom ========
+var $intro=$("intro"), $main=$("main"), $appbar=$("appbar"), $btnPull=$("btnPull"), $loc=$("locationId"), $tbody=$("tbody"), $chips=$("chips"), $queueCount=$("queueCount"), $btnClear=$("btnClear"), $btnSave=$("btnSave"), $countInfo=$("countInfo"), $search=$("search"), $btnRefresh=$("btnRefresh"), $pageSizeSelect=$("pageSizeSelect"), $tableWrap=$("tableWrap");
 
-// --- state ---
-var serverPage = Math.max(1, toInt(getQS("page"), 1));
+// ======== state ========
+var serverPage = 1;
 var pageSize   = Math.max(1, toInt(getQS("pageSize"), 50));
+$pageSizeSelect.value = String(pageSize);
 var sortKind   = getQS("sort","name-asc");
 var totalCount = 0;
 var pageItems  = [];
@@ -182,7 +177,7 @@ var inFlight   = false;
 
 if (getQS("locationId")) $loc.value = getQS("locationId");
 
-// --- fetching ---
+// ======== fetch utils ========
 function parsePayload(payload){
   var obj = payload;
   if (Array.isArray(obj)){
@@ -195,30 +190,31 @@ function parsePayload(payload){
   return { items: sanitizeRows(subset), total: Number((obj && obj.totalCount)!=null?obj.totalCount:subset.length) || 0 };
 }
 function sanitizeRows(list){
-  return list.map(function(r){
-    return { name: r && r.name || "", fieldKey: r && r.fieldKey || "", value: (r && (r.value!=null?r.value:null)), id: r && r.id || null };
-  });
+  return list.map(function(r){ return { name: r && r.name || "", fieldKey: r && r.fieldKey || "", value: (r && (r.value!=null?r.value:null)), id: r && r.id || null }; });
 }
 
 async function fetchPage(){
   if (inFlight) return; inFlight=true; showSpin(true);
+  var preserveScroll = $tableWrap.scrollTop;
   try{
     var res = await fetch(READ_URL, {
       method:"POST",
       headers:{ "Content-Type":"application/json", "Accept":"application/json", ...(AUTH_TOKEN?{Authorization:AUTH_TOKEN}:{}) },
       body: JSON.stringify({ locationId: ($loc.value||"").trim(), page: serverPage, pageSize, sort: sortKind })
     });
-    var txt = await res.text(); var payload={}; try{ payload = txt?JSON.parse(txt):{} }catch(e){}
     if (!res.ok) throw new Error("Read "+res.status+" "+(res.statusText||""));
+    var txt = await res.text(); var payload={}; try{ payload = txt?JSON.parse(txt):{} }catch(e){}
     var parsed = parsePayload(payload);
     pageItems  = parsed.items; totalCount = parsed.total; applyFilter(); renderTable();
-    $("countInfo").textContent = "Loaded "+filtered.length+" on page • "+totalCount+" total";
+    $countInfo.textContent = "Loaded "+filtered.length+" on page • "+totalCount+" total";
     show($intro,false); show($appbar,true); show($main,true);
+    // restore scroll position
+    requestAnimationFrame(function(){ $tableWrap.scrollTop = preserveScroll; });
   }catch(e){ alert(e && e.message ? e.message : String(e)); }
   finally{ showSpin(false); inFlight=false; }
 }
 
-// --- render ---
+// ======== render ========
 function applyFilter(){
   var q = ($search.value||"").trim().toLowerCase();
   filtered = !q ? pageItems : pageItems.filter(function(r){ return (r.name||"").toLowerCase().indexOf(q) !== -1; });
@@ -231,20 +227,18 @@ function renderTable(){
     var initial = edited.has(row.fieldKey) ? edited.get(row.fieldKey).value : (row.value!=null?row.value:"");
     tr.innerHTML =
       '<td>'+ (row.name||"") +'</td>'+
-      '<td><input class="value-input" data-key="'+ (row.fieldKey||"") +'" data-id="'+ (row.id||"") +'" value="'+ String(initial).replace(/"/g,'&quot;') +'" placeholder="(empty)" /></td>'+
+      '<td><input class="value-input'+(edited.has(row.fieldKey)?' changed':'')+'" data-key="'+ (row.fieldKey||"") +'" data-id="'+ (row.id||"") +'" value="'+ String(initial).replace(/"/g,'&quot;') +'" placeholder="(empty)" /></td>'+
       '<td style="position:relative">\n        <button class="info-btn" data-pop="pop-'+(row.fieldKey||"").replace(/[^\w-]+/g,'_')+'">ℹ️</button>\n        <div class="popover" id="pop-'+(row.fieldKey||"").replace(/[^\w-]+/g,'_')+'">\n          <div class="row">\n            <span class="mono">Field Key:</span>\n            <span class="copy" data-copy="'+ (row.fieldKey||"") +'">Copy</span>\n          </div>\n          <div class="mono" style="margin:4px 0 10px 0">'+ (row.fieldKey||"(none)") +'</div>\n          <div class="row">\n            <span class="mono">Row ID:</span>\n            <span class="copy" data-copy="'+ (row.id||"") +'">Copy</span>\n          </div>\n          <div class="mono">'+ (row.id||"(none)") +'</div>\n        </div>\n      </td>';
 
     var input = tr.querySelector("input.value-input");
     input.addEventListener("input", function(e){
-      var clean = e.target.value.replace(/\r?\n/g, " ");
-      if (clean !== e.target.value) e.target.value = clean;
+      var clean = e.target.value.replace(/\r?\n/g, " "); if (clean !== e.target.value) e.target.value = clean;
       var fv = (clean||"").trim(); var ov = (row.value!=null?String(row.value):"");
       if (fv !== ov){ input.classList.add("changed"); edited.set(row.fieldKey, { id: row.id, fieldKey: row.fieldKey, value: clean, name: row.name }); }
       else { input.classList.remove("changed"); edited.delete(row.fieldKey); }
       renderQueue();
     });
 
-    // Info popover events
     var btn = tr.querySelector(".info-btn");
     var popId = btn.getAttribute("data-pop");
     var pop = tr.querySelector("#"+popId);
@@ -255,7 +249,6 @@ function renderTable(){
     pop.addEventListener('click', function(ev){ ev.stopPropagation(); });
     document.addEventListener('click', function(){ pop.style.display='none'; });
 
-    // Copy buttons
     tr.querySelectorAll('[data-copy]').forEach(function(cp){
       cp.addEventListener('click', function(){ navigator.clipboard.writeText(cp.getAttribute('data-copy')||''); cp.textContent='Copied!'; setTimeout(function(){ cp.textContent='Copy'; },900); });
     });
@@ -273,21 +266,24 @@ function renderQueue(){
     var chip = document.createElement("span");
     chip.className = "chip";
     chip.innerHTML = '<span class="mono" title="'+ u.fieldKey +'">'+ (u.name||u.fieldKey).slice(0,44) +'</span><span class="x" title="Remove">×</span>';
-    chip.querySelector(".x").addEventListener("click", function(){ edited.delete(u.fieldKey); var inp = document.querySelector('input[data-key="'+ u.fieldKey +'"]'); if (inp) inp.classList.remove("changed"); renderQueue(); });
+    chip.querySelector(".x").addEventListener("click", function(){ edited.delete(u.fieldKey); var inp = document.querySelector('input[data-key="'+ u.fieldKey +'"]'); if (inp){ inp.classList.remove("changed"); var item = pageItems.find(function(x){return x.fieldKey===u.fieldKey}); if(item) inp.value = item.value!=null?item.value:""; } renderQueue(); });
     $chips.appendChild(chip);
   });
 }
 
-// --- save ---
+// ======== save ========
 async function saveAll(){
   var updates = Array.from(edited.values()).map(function(u){ return { id:u.id, fieldKey:u.fieldKey, value:u.value }; });
   if (!updates.length){ alert('No changes to save.'); return; }
   $btnSave.disabled=true; showSpin(true);
   try{
     var res = await fetch(WRITE_URL, { method:"POST", headers:{ "Content-Type":"application/json", ...(AUTH_TOKEN?{Authorization:AUTH_TOKEN}:{}) }, body: JSON.stringify({ locationId: ($loc.value||"").trim(), updates }) });
+    if (!res.ok) throw new Error('Write '+res.status+' '+(res.statusText||''));
     var t = await res.text(); var p={}; try{ p = t?JSON.parse(t):{} }catch(e){}
-    if (!res.ok) throw new Error('Write '+res.status);
-    // Optimistically merge values into pageItems
+    var explicitOk = (p && (p.ok===true || p.success===true || p.status==='ok' || Array.isArray(p.updated)));
+    if (!explicitOk && (!t || t.trim()==='')) throw new Error('No success response body from server.');
+
+    // merge successful values locally
     updates.forEach(function(u){ var item = pageItems.find(function(x){ return x.fieldKey===u.fieldKey; }); if (item) item.value = u.value; var inp = document.querySelector('input[data-key="'+ u.fieldKey +'"]'); if (inp) inp.classList.remove('changed'); });
     edited.clear(); renderQueue();
     alert('Saved '+updates.length+' update'+(updates.length===1?'':'s')+' ✔');
@@ -295,20 +291,24 @@ async function saveAll(){
   finally{ $btnSave.disabled=false; showSpin(false); }
 }
 
-// --- events ---
+// ======== events ========
 $btnPull.addEventListener('click', fetchPage);
-$btnClear.addEventListener('click', function(){ edited.clear(); document.querySelectorAll('.value-input.changed').forEach(function(el){ el.classList.remove('changed'); }); renderQueue(); });
+$btnRefresh.addEventListener('click', fetchPage);
+$pageSizeSelect.addEventListener('change', function(){ pageSize = toInt($pageSizeSelect.value, 50); fetchPage(); });
+$btnClear.addEventListener('click', function(){
+  // revert fields and clear edits
+  edited.forEach(function(u){ var inp = document.querySelector('input[data-key="'+u.fieldKey+'"]'); var item = pageItems.find(function(x){return x.fieldKey===u.fieldKey}); if(inp){ inp.classList.remove('changed'); inp.value = item && item.value!=null?item.value:''; } });
+  edited.clear(); renderQueue();
+});
 $btnSave.addEventListener('click', saveAll);
 $search.addEventListener('input', function(){ applyFilter(); renderTable(); });
 
 // Keyboard shortcuts
 window.addEventListener('keydown', function(e){
-  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase()==='s'){ e.preventDefault(); saveAll(); }
+  var k = e.key.toLowerCase();
+  if ((e.metaKey || e.ctrlKey) && k==='s'){ e.preventDefault(); saveAll(); }
+  if ((e.metaKey || e.ctrlKey) && k==='r'){ e.preventDefault(); fetchPage(); }
 });
-
-/* ===================================
-   =======   WHERE TO PASTE — END  =====
-   =================================== */
 </script>
 </body>
 </html>
